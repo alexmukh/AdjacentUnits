@@ -17,8 +17,8 @@ class Program {
 
   }
 
-  class Army {
-    List <Unit> _units;
+  abstract class Army {
+    protected List <Unit> _units;
 
     public void Add ( Unit u) { 
       _units.Add(u); 
@@ -42,15 +42,18 @@ class Program {
       foreach(var u in _units) u.Print();
     }
 
-    // 1 0 2
-    // 4 3 5
-    // 7 6 8
+    public abstract List <Unit> AdjacentUnits( int index );
+  }
 
-    public List <Unit> AdjacentUnits3( int index ) {
+  class Formation : Army {
 
-    var formationLeftFlank = new List <int> () {-3, -1, 2, 3};
-    var formationCenter = new List <int> () {-3, -2, -1, 1, 2, 3};
-    var formationRightFlank = new List <int> () {-3, -2, 1, 3};
+    public Formation ( List <int> listOfUnits ) : base(listOfUnits) {}
+      
+    public override List <Unit> AdjacentUnits( int index ) {
+
+      var formationLeftFlank = new List <int> () {-3, -1, 2, 3};
+      var formationCenter = new List <int> () {-3, -2, -1, 1, 2, 3};
+      var formationRightFlank = new List <int> () {-3, -2, 1, 3};
 
       // для колонны по 3
       List <Unit> a = new List <Unit> ();
@@ -84,17 +87,23 @@ class Program {
   public static void Main (string[] args) {
     Console.WriteLine ("Hello World");
     var listOfInt = new List <int> () {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23};
-    Army army = new Army(listOfInt) ;
+    Formation army = new Formation(listOfInt) ;
     
     army.Print();
     Console.WriteLine();
 
-    army.AdjacentUnits3(8);
+    army.AdjacentUnits(8);
     Console.WriteLine();
     
-    army.AdjacentUnits3(7);
+    army.AdjacentUnits(7);
     Console.WriteLine();
     
-    army.AdjacentUnits3(21);
+    army.AdjacentUnits(21);
   }
 }
+
+//YAGNI - реализуем только те функции и структуры данных, которые нужны для конкреного действия - определения соседних юнитов
+
+//DRY - AdjacentUnits3 тут переписана по сравнению с предыдущим кодом
+
+//KISS
