@@ -4,12 +4,45 @@ using System.Collections.Generic;
 
 class Program {
 
-  class Unit {
+  public class Unit : IUnit {
     int name;
+
+    // to change to private
     
-    public Unit( int n ) {
+    public int maxHealth = 100;
+    public int minHealth = 0;
+    public int currentHealth;
+
+    public bool killed;
+
+    public Unit() {
+      currentHealth = maxHealth;
+    }
+  
+    public Unit( int n ) : this() {
       name = n;
     }
+
+    public virtual void Heal( int healAmount ) {
+      if (killed) return;
+      currentHealth += healAmount;
+      if (currentHealth > maxHealth) currentHealth = maxHealth;
+      Console.WriteLine("Default method applied");
+    }
+
+    public void Damage( int damageAmount ) {
+      if (killed) return;
+      currentHealth -= damageAmount;
+      if (currentHealth < minHealth) {
+        Destroy();
+      }
+    }
+
+    public void Destroy() {
+      killed = true;
+    }
+    
+    //public abstract void Cast();
     
     public void Print() {
       Console.WriteLine(name);
@@ -17,6 +50,26 @@ class Program {
 
   }
 
+  public interface IUnit {
+    
+  }
+
+  
+      
+  class Healer : Unit {
+    private int healAmount = 10;
+    
+    public void Cast(List <Unit> adjacentUnits) {
+        //foreach( var u in adjacentUnits ) u?.Heal(u, healAmount);
+    }
+
+    public override void Heal(int healAmount) {
+      Console.WriteLine("Method overriden");
+      base.Heal(healAmount);
+    }
+    
+  }
+  
   abstract class Army {
     protected List <Unit> _units;
 
@@ -99,6 +152,10 @@ class Program {
     Console.WriteLine();
     
     army.AdjacentUnits(21);
+
+    var healer = new Healer();
+
+    healer.Heal(10);
   }
 }
 
