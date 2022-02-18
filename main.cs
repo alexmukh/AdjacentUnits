@@ -22,12 +22,15 @@ class Program {
     public Unit( int n ) : this() {
       name = n;
     }
-
+    
+    public virtual void Cast(List <Unit> adjacentUnits) {}
+    
     public virtual void Heal( int healAmount ) {
       if (killed) return;
       currentHealth += healAmount;
       if (currentHealth > maxHealth) currentHealth = maxHealth;
-      Console.WriteLine("Default method applied");
+      Console.Write("Healed:");
+      Print();
     }
 
     public void Damage( int damageAmount ) {
@@ -59,8 +62,8 @@ class Program {
   class Healer : Unit {
     private int healAmount = 10;
     
-    public void Cast(List <Unit> adjacentUnits) {
-        //foreach( var u in adjacentUnits ) u?.Heal(u, healAmount);
+    public override void Cast(List <Unit> adjacentUnits) {
+        foreach( var u in adjacentUnits ) u.Heal(healAmount);
     }
 
     public override void Heal(int healAmount) {
@@ -96,6 +99,15 @@ class Program {
     }
 
     public abstract List <Unit> AdjacentUnits( int index );
+
+    public void CastAll() {
+      for(var i=0; i<_units.Count; i++) {
+        var superUnit = _units[i];
+        var neighborsList = AdjacentUnits(i);
+        superUnit.Cast(neighborsList);
+        }
+    }
+    
   }
 
   class Formation : Army {
@@ -130,7 +142,7 @@ class Program {
           break;
       }
       
-      foreach( var u in a ) u.Print();
+      //foreach( var u in a ) u.Print();
       
       return a;
     }
@@ -142,20 +154,12 @@ class Program {
     var listOfInt = new List <int> () {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23};
     Formation army = new Formation(listOfInt) ;
     
-    army.Print();
-    Console.WriteLine();
-
-    army.AdjacentUnits(8);
-    Console.WriteLine();
-    
-    army.AdjacentUnits(7);
-    Console.WriteLine();
-    
-    army.AdjacentUnits(21);
-
     var healer = new Healer();
 
-    healer.Heal(10);
+    army.Add(healer);
+    army.Print();
+    
+    army.CastAll();
   }
 }
 
