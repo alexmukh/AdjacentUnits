@@ -6,7 +6,8 @@ class Program {
 
   public class Unit : IUnit {
     int name;
-
+    int _hitPoints = 10;
+    String _name;
     // to change to private
     
     public int maxHealth = 100;
@@ -15,6 +16,11 @@ class Program {
 
     public bool killed;
 
+    public String Name { get => _name; set => _name = value; }
+    public int CurrentHealth { get => currentHealth; set => currentHealth = value; }
+    public bool Alive { get => !killed; }
+    public int HitPoints { get => _hitPoints; }
+    
     public Unit() {
       currentHealth = maxHealth;
     }
@@ -22,8 +28,12 @@ class Program {
     public Unit( int n ) : this() {
       name = n;
     }
+
+    public Unit( String name ) : this() {
+      Name = name;
+    }
     
-    public virtual void Cast(List <Unit> adjacentUnits) {}
+    public virtual void Cast(Army army, List <Unit> adjacentUnits) {}
     
     public virtual void Heal( int healAmount ) {
       if (killed) return;
@@ -33,7 +43,7 @@ class Program {
       Print();
     }
 
-    public void Damage( int damageAmount ) {
+    public virtual void Damage( int damageAmount ) {
       if (killed) return;
       currentHealth -= damageAmount;
       if (currentHealth < minHealth) {
@@ -48,21 +58,24 @@ class Program {
     //public abstract void Cast();
     
     public void Print() {
-      Console.WriteLine(name);
+      Console.WriteLine("{0}:{1}", name, Name);
     }
 
   }
 
   public interface IUnit {
-    
+    String Name { get; set; }  
+    int HitPoints { get; }
   }
 
   
       
   class Healer : Unit {
     private int healAmount = 10;
+
+    public Healer(String name) : base(name) {}
     
-    public override void Cast(List <Unit> adjacentUnits) {
+    public override void Cast(Army army, List <Unit> adjacentUnits) {
         foreach( var u in adjacentUnits ) u.Heal(healAmount);
     }
 
@@ -72,15 +85,34 @@ class Program {
     }
     
   }
-  
-  abstract class Army {
-    protected List <Unit> _units;
 
+  class Magian : Unit {
+    public override void Cast(Army army, List <Unit> adjacentUnits) {
+      foreach( var u in adjacentUnits ) army.Add(u);
+    }
+    public override void Heal(int healAmount) {}
+  }
+  
+  public abstract class Army {
+    protected List <Unit> _units;
+    public ref Unit Champ { get => _units[0]; }
+    
     public void Add ( Unit u) { 
       _units.Add(u); 
     }
 
     public Army ( List <int> listOfUnits ) {
+      _units = new List <Unit> ();
+
+
+      
+      foreach(var n in listOfUnits) {
+        var u = new Unit(n);
+        _units.Add( u );
+      }
+    }
+
+    public Army ( List <String> listOfUnits ) {
       _units = new List <Unit> ();
 
       foreach(var n in listOfUnits) {
@@ -89,6 +121,7 @@ class Program {
       }
     }
 
+    
     public bool indexIsValid(int index) {
       if ( 0 <= index && index < _units.Count ) return true;
       return false;
@@ -103,17 +136,32 @@ class Program {
     public void CastAll() {
       for(var i=0; i<_units.Count; i++) {
         var superUnit = _units[i];
-        var neighborsList = AdjacentUnits(i);
-        superUnit.Cast(neighborsList);
+        if(!superUnit.killed) {
+          var neighborsList = AdjacentUnits(i);
+          superUnit.Cast(this, neighborsList);
+          }
         }
+    }
+  
+    public int ChampionHitPoints { get => _units[0].HitPoints; }
+    
+    public void HitChampion(int damageAmount) {
+      if(_units[0].killed) return;
+      _units[0].Damage(damageAmount);
+    }
+  
+    public void ChampionAttack(Army opponentArmy) {
+      if (_units[0].killed) return;
+      opponentArmy.HitChampion(_units[0].HitPoints);    
     }
     
   }
 
-  class Formation : Army {
+  class FormationColumnX3 : Army {
 
-    public Formation ( List <int> listOfUnits ) : base(listOfUnits) {}
-      
+    public FormationColumnX3 ( List <int> listOfUnits ) : base(listOfUnits) {}
+    public FormationColumnX3 ( List <String> listOfUnits ) : base(listOfUnits) {} 
+    
     public override List <Unit> AdjacentUnits( int index ) {
 
       var formationLeftFlank = new List <int> () {-3, -1, 2, 3};
@@ -141,9 +189,7 @@ class Program {
             if (indexIsValid(index+i)) a.Add(_units[index+i]);
           break;
       }
-      
       //foreach( var u in a ) u.Print();
-      
       return a;
     }
   }
@@ -152,14 +198,23 @@ class Program {
   public static void Main (string[] args) {
     Console.WriteLine ("Hello World");
     var listOfInt = new List <int> () {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23};
-    Formation army = new Formation(listOfInt) ;
+    FormationColumnX3 army = new FormationColumnX3(listOfInt) ;
     
-    var healer = new Healer();
+    var healer = new Healer("Д-р Пилюлькин");
 
     army.Add(healer);
+    army.Add(new Healer("Д-р Стекляшкин"));
     army.Print();
     
     army.CastAll();
+
+    var listOfStr = new List <String> () {"Gendalf","Frodo"};
+
+    FormationColumnX3 RedArmy = new FormationColumnX3(listOfStr);
+    FormationColumnX3 WhiteArmy = new FormationColumnX3(listOfStr);
+
+    
+    
   }
 }
 
