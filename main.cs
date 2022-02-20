@@ -95,7 +95,7 @@ class Program {
   
   public abstract class Army {
     protected List <Unit> _units;
-    public ref Unit Champ { get => _units[0]; }
+    public Unit Champ { get => _units[0]; }
     
     public void Add ( Unit u) { 
       _units.Add(u); 
@@ -134,25 +134,25 @@ class Program {
     public abstract List <Unit> AdjacentUnits( int index );
 
     public void CastAll() {
-      for(var i=0; i<_units.Count; i++) {
+      for(var i=1; i<_units.Count; i++) {
         var superUnit = _units[i];
-        if(!superUnit.killed) {
+        if(superUnit.Alive) {
           var neighborsList = AdjacentUnits(i);
           superUnit.Cast(this, neighborsList);
           }
         }
     }
   
-    public int ChampionHitPoints { get => _units[0].HitPoints; }
+    public int ChampHitPoints { get => _units[0].HitPoints; }
     
-    public void HitChampion(int damageAmount) {
-      if(_units[0].killed) return;
-      _units[0].Damage(damageAmount);
+    public void HitChamp(int damageAmount) {
+      if(Champ.killed) return;
+      Champ.Damage(damageAmount);
     }
   
-    public void ChampionAttack(Army opponentArmy) {
-      if (_units[0].killed) return;
-      opponentArmy.HitChampion(_units[0].HitPoints);    
+    public void ChampAttack(Army opponentArmy) {
+      if (Champ.killed) return;
+      opponentArmy.HitChamp(Champ.HitPoints);    
     }
     
   }
@@ -213,8 +213,12 @@ class Program {
     FormationColumnX3 RedArmy = new FormationColumnX3(listOfStr);
     FormationColumnX3 WhiteArmy = new FormationColumnX3(listOfStr);
 
-    
-    
+    Console.WriteLine();
+    RedArmy.Champ.Print();
+
+    RedArmy.ChampAttack(WhiteArmy);
+    if(WhiteArmy.Champ.Alive) WhiteArmy.ChampAttack(RedArmy);
+    RedArmy.CastAll();
   }
 }
 
