@@ -145,16 +145,7 @@ class Program {
   
     public int ChampHitPoints { get => _units[0].HitPoints; }
     
-    public void HitChamp(int damageAmount) {
-      if(Champ.killed) return;
-      Champ.Damage(damageAmount);
-    }
-  
-    public void ChampAttack(Army opponentArmy) {
-      if (Champ.killed) return;
-      opponentArmy.HitChamp(Champ.HitPoints);    
-    }
-    
+        
   }
 
   class FormationColumnX3 : Army {
@@ -216,8 +207,9 @@ class Program {
     Console.WriteLine();
     RedArmy.Champ.Print();
 
-    RedArmy.ChampAttack(WhiteArmy);
-    if(WhiteArmy.Champ.Alive) WhiteArmy.ChampAttack(RedArmy);
+    
+    WhiteArmy.Champ.Damage(RedArmy.Champ.HitPoints);
+    if(WhiteArmy.Champ.Alive) RedArmy.Champ.Damage(WhiteArmy.Champ.HitPoints);
     RedArmy.CastAll();
   }
 }
