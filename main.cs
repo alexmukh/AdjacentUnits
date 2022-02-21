@@ -19,6 +19,8 @@ class Program {
     public String Name { get => _name; set => _name = value; }
     public int CurrentHealth { get => currentHealth; set => currentHealth = value; }
     public bool Alive { get => !killed; }
+    public bool Killed { get => killed; }
+
     public int HitPoints { get => _hitPoints; }
     
     public Unit() {
@@ -33,7 +35,7 @@ class Program {
       Name = name;
     }
     
-    public virtual void Cast(Army army, List <Unit> adjacentUnits) {}
+    public virtual void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy) {}
     
     public virtual void Heal( int healAmount ) {
       if (killed) return;
@@ -75,7 +77,7 @@ class Program {
 
     public Healer(String name) : base(name) {}
     
-    public override void Cast(Army army, List <Unit> adjacentUnits) {
+    public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy=null) {
         foreach( var u in adjacentUnits ) u.Heal(healAmount);
     }
 
@@ -87,15 +89,24 @@ class Program {
   }
 
   class Magian : Unit {
-    public override void Cast(Army army, List <Unit> adjacentUnits) {
-      foreach( var u in adjacentUnits ) army.Add(u);
+    public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy=null) {
+      foreach( var u in adjacentUnits ) ourArmy.Add(u);
     }
-    public override void Heal(int healAmount) {}
+    public override void Heal(int healAmount) {} // not healable
+  }
+
+  class Archer : Unit {
+    int rangedHitPoints = 10;
+    
+    public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy) {
+      opponentArmy.RandomUnit.Damage(rangedHitPoints);
+    }
   }
   
   public abstract class Army {
     protected List <Unit> _units;
     public Unit Champ { get => _units[0]; }
+    public int ChampHitPoints { get => _units[0].HitPoints; } 
     
     public void Add ( Unit u) { 
       _units.Add(u); 
@@ -103,8 +114,6 @@ class Program {
 
     public Army ( List <int> listOfUnits ) {
       _units = new List <Unit> ();
-
-
       
       foreach(var n in listOfUnits) {
         var u = new Unit(n);
@@ -121,6 +130,13 @@ class Program {
       }
     }
 
+    public Unit RandomUnit { 
+      get {
+        Random r = new Random();
+        int index = r.Next(_units.Count);
+        return _units[index];
+      }
+    }
     
     public bool indexIsValid(int index) {
       if ( 0 <= index && index < _units.Count ) return true;
@@ -133,17 +149,17 @@ class Program {
 
     public abstract List <Unit> AdjacentUnits( int index );
 
-    public void CastAll() {
+    public void CastAll(Army opponentArmy) {
       for(var i=1; i<_units.Count; i++) {
         var superUnit = _units[i];
         if(superUnit.Alive) {
           var neighborsList = AdjacentUnits(i);
-          superUnit.Cast(this, neighborsList);
+          superUnit.Cast(neighborsList, this, opponentArmy);
           }
         }
     }
   
-    public int ChampHitPoints { get => _units[0].HitPoints; }
+
     
         
   }
@@ -197,7 +213,7 @@ class Program {
     army.Add(new Healer("Д-р Стекляшкин"));
     army.Print();
     
-    army.CastAll();
+    army.CastAll(null);
 
     var listOfStr = new List <String> () {"Gendalf","Frodo"};
 
@@ -210,7 +226,7 @@ class Program {
     
     WhiteArmy.Champ.Damage(RedArmy.Champ.HitPoints);
     if(WhiteArmy.Champ.Alive) RedArmy.Champ.Damage(WhiteArmy.Champ.HitPoints);
-    RedArmy.CastAll();
+    RedArmy.CastAll(WhiteArmy);
   }
 }
 
