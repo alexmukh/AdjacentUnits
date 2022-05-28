@@ -113,10 +113,13 @@ class Program {
 
     public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy=null) {
       if (!CastChance) return;
-      foreach( var u in adjacentUnits ) ourArmy.Add(u);
-    } // ! запретить клонирование хилера и рыцаря
+      foreach (var u in adjacentUnits)
+      {
+        if (!(u is Healer || u is Knight)) ourArmy.Add(u); // запрещено клонирование хилера и рыцаря
+      }
+    }
     
-    public override void Heal(int healAmount) {} // not healable
+    public override void Heal(int healAmount) {} // маг не вылечивается
   }
 
   class Archer : Unit {
@@ -195,7 +198,7 @@ class Program {
     public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy=null) {
       if (!CastChance) return;
       foreach( var u in adjacentUnits ) {
-        if (!(u is Knight)) continue;  
+        if (!(u is Knight)) continue; // проверяем юнит на рыцарство  
         if (Horse) { 
           ((Knight)u).Horse = true;
           Horse = false;
