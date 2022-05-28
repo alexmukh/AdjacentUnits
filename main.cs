@@ -283,10 +283,6 @@ class Program {
           }
         }
     }
-  
-
-    
-        
   }
 
   class FormationColumnX3 : Army {
@@ -326,9 +322,55 @@ class Program {
     }
   }
 
+    class Opponents
+    {
+        Tuple<Army, Army> Opp;
+        public Opponents(Army Red, Army White)
+        {
+            Opp = new Tuple<Army, Army> (Red, White);
+        }
 
+        public Opponents (Opponents other) : this(other.Opp.Item1, other.Opp.Item2)
+        {  
+        }
+    }
+    class History 
+    {
+        Stack <Opponents> Undo;
+        Stack <Opponents> Redo;
 
-  public static void Main (string[] args) {
+        public void SaveToHistory (Opponents S)
+        {
+            Undo.Push (S);
+        }
+
+        public bool GetFromHistory ( ref Opponents S )
+        {
+
+            var Current = new Opponents(S);
+
+            if ( Undo.TryPop(out S) )
+            {
+                Redo.Push(Current);
+                return true;
+            }
+            return false;
+        }
+
+        public bool RedoHistory ( ref Opponents S )
+        {
+            var Current = new Opponents(S);
+
+            if ( Redo.TryPop(out S) )
+            {
+                Undo.Push(Current);
+                return true;
+            }
+            return false;
+        }
+    }
+
+    public static void Main (string[] args) {
     Console.WriteLine ("Hello World");
     var listOfInt = new List <int> () {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23};
     FormationColumnX3 army = new FormationColumnX3(listOfInt) ;
