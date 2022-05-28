@@ -20,18 +20,12 @@ class Program {
 
     public bool killed;
 
-    public virtual String UnitType { get => "generic"; }
-    
     public String Name { get => _name; set => _name = value; }
     public int CurrentHealth { get => currentHealth; set => currentHealth = value; }
     public bool Alive { get => !killed; }
     public bool Killed { get => killed; }
     public int ID { get => _id; set => _id = value; }
     public int Cost { get => _cost; set => _cost = value; }
-    public virtual bool Horse { get; set; }
-    public virtual bool Lance { get; set; }
-    public virtual bool Shield { get; set; }
-    public virtual bool Helm { get; set; }
     public virtual int HitPoints { get => _hitPoints; }
     
     public Unit() {
@@ -70,8 +64,6 @@ class Program {
       killed = true;
     }
     
-    //public abstract void Cast();
-    
     public void Print() {
       Console.WriteLine("{0}:{1}", _id, Name);
     }
@@ -99,14 +91,10 @@ class Program {
     int ID { get; set; }
     int Cost { get; set; }
   }
-
-  
       
   class Healer : Unit {
 
     private int healAmount = 10;
-
-    public override String UnitType { get => "Healer"; }
     public Healer(String name) : base(name) {} // запускает конструктор базового класса
     
     public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy=null) {
@@ -122,7 +110,7 @@ class Program {
   }
 
   class Magician : Unit {
-    public override String UnitType { get => "Magician"; }
+
     public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy=null) {
       if (!CastChance) return;
       foreach( var u in adjacentUnits ) ourArmy.Add(u);
@@ -133,14 +121,22 @@ class Program {
 
   class Archer : Unit {
     int rangedDamage = 10;
-    public override String UnitType { get => "Archer"; }
+
     public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy) {
       if (!CastChance) return;
       opponentArmy.RandomUnit.Damage(rangedDamage);
     }
   }
 
-  class Knight : Unit {
+
+    public interface IArmor
+    {
+        public bool Horse { get; set; }
+        public bool Lance { get; set; }
+        public bool Shield { get; set; }
+        public bool Helm { get; set; }
+    }
+  class Knight : Unit, IArmor {
 
     bool _helm, 
         _shield, 
@@ -150,7 +146,7 @@ class Program {
         _shieldPoints = 10, 
         _lancePoints = 10, 
         _horsePoints = 10;
-    public override String UnitType { get => "Knight"; }
+
     public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy) {} // нет спецдействия
 
     public override int HitPoints { get => base.HitPoints + LanceHitPoints + HorseHitPoints; }
@@ -171,11 +167,10 @@ class Program {
       base.Damage(finDamageAmount);  // оставшийся урон рыцарь терпит как все
     }
 
-    public override bool Helm { get => _helm; set => _helm = value; }
-    public override bool Horse { get => _horse; set => _horse = value; }
-    public override bool Lance { get => _lance; set => _lance = value; }
-    public override bool Shield { get => _shield; set => _shield = value; }
-
+    public bool Helm { get => _helm; set => _helm = value; }
+    public bool Horse { get => _horse; set => _horse = value; }
+    public bool Lance { get => _lance; set => _lance = value; }
+    public bool Shield { get => _shield; set => _shield = value; }
     public int LanceHitPoints { get { if(Lance) return _lancePoints; return 0; } }
     public int HorseHitPoints { get { if(Horse) return _horsePoints; return 0; } }
     public int HelmProtectionPoints { get { if(Helm) return _helmPoints; return 0; } }
@@ -183,7 +178,7 @@ class Program {
 
   }
 
-  class Infantry : Unit {
+  class Infantry : Unit, IArmor {
     
     bool _helm, 
         _shield, 
@@ -196,38 +191,38 @@ class Program {
       Lance = true;
       Shield = true;
     }
-    public override String UnitType { get => "Infantry"; }
+
     public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy=null) {
       if (!CastChance) return;
       foreach( var u in adjacentUnits ) {
-        if (u.UnitType != "Knight") continue;  
+        if (!(u is Knight)) continue;  
         if (Horse) { 
-          u.Horse = true;
+          ((Knight)u).Horse = true;
           Horse = false;
           return;
           }
         if (Lance) { 
-          u.Lance = true;
+          ((Knight)u).Lance = true;
           Lance = false;
           return;
           }
         if (Shield) { 
-          u.Shield = true;
+          ((Knight)u).Shield = true;
           Shield = false;
           return;
           }
         if (Helm) { 
-          u.Helm = true;
+          ((Knight)u).Helm = true;
           Helm = false;
           return;
           }
       }
-    } 
-    
-    public override bool Helm { get => _helm; set => _helm = value; }
-    public override bool Horse { get => _horse; set => _horse = value; }
-    public override bool Lance { get => _lance; set => _lance = value; }
-    public override bool Shield { get => _shield; set => _shield = value; }    
+    }
+        public bool Helm { get => _helm; set => _helm = value; }
+        public bool Horse { get => _horse; set => _horse = value; }
+        public bool Lance { get => _lance; set => _lance = value; }
+        public bool Shield { get => _shield; set => _shield = value; }
+
   }
   
   public abstract class Army {
