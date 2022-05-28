@@ -5,10 +5,14 @@ using System.Collections.Generic;
 class Program {
 
   public class Unit : IUnit {
-    int name;
+    
+    int _id;
     int _hitPoints = 10;
     String _name;
-    // to change to private
+    int _cost;
+    // для использования методов класса String в дальнейшем
+
+    Double _expectation = 0.5;
     
     public int maxHealth = 100;
     public int minHealth = 0;
@@ -16,33 +20,42 @@ class Program {
 
     public bool killed;
 
+    public virtual String UnitType { get => "generic"; }
+    
     public String Name { get => _name; set => _name = value; }
     public int CurrentHealth { get => currentHealth; set => currentHealth = value; }
     public bool Alive { get => !killed; }
     public bool Killed { get => killed; }
-
-    public int HitPoints { get => _hitPoints; }
+    public int ID { get => _id; set => _id = value; }
+    public int Cost { get => _cost; set => _cost = value; }
+    public virtual bool Horse { get; set; }
+    public virtual bool Lance { get; set; }
+    public virtual bool Shield { get; set; }
+    public virtual bool Helm { get; set; }
+    public virtual int HitPoints { get => _hitPoints; }
     
     public Unit() {
       currentHealth = maxHealth;
     }
   
     public Unit( int n ) : this() {
-      name = n;
-    }
+      _id = n;
+    } // конструктор по _id
 
     public Unit( String name ) : this() {
       Name = name;
-    }
+    } // конструктор по name
     
     public virtual void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy) {}
+    // задаем формат метода Cast для каждого юнита в дальнейшем
     
     public virtual void Heal( int healAmount ) {
       if (killed) return;
+
       currentHealth += healAmount;
       if (currentHealth > maxHealth) currentHealth = maxHealth;
       Console.Write("Healed:");
-      Print();
+      Print(); // для анимации :)
     }
 
     public virtual void Damage( int damageAmount ) {
@@ -60,47 +73,161 @@ class Program {
     //public abstract void Cast();
     
     public void Print() {
-      Console.WriteLine("{0}:{1}", name, Name);
+      Console.WriteLine("{0}:{1}", _id, Name);
     }
 
+    public bool CastChance {
+      get 
+      {
+        Random r = new Random();
+      
+        Double chance = (Double)r.Next()/Int32.MaxValue;
+        Console.WriteLine($"The cast chance is {chance}");
+        if ( chance > _expectation ) {
+          Console.WriteLine("KAKAYA JALOSTЬ");
+          return false;
+        }
+        return true;
+      }
+    }
+    
   }
 
   public interface IUnit {
     String Name { get; set; }  
     int HitPoints { get; }
+    int ID { get; set; }
+    int Cost { get; set; }
   }
 
   
       
   class Healer : Unit {
+
     private int healAmount = 10;
 
-    public Healer(String name) : base(name) {}
+    public override String UnitType { get => "Healer"; }
+    public Healer(String name) : base(name) {} // запускает конструктор базового класса
     
     public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy=null) {
-        foreach( var u in adjacentUnits ) u.Heal(healAmount);
-    }
+      if (!CastChance) return;
+      foreach( var u in adjacentUnits ) u.Heal(healAmount);
+    } // применяем heal на соседних юнитах
 
     public override void Heal(int healAmount) {
       Console.WriteLine("Method overriden");
       base.Heal(healAmount);
-    }
+    } // тестирование возможности кастомного лечения
     
   }
 
-  class Magian : Unit {
+  class Magician : Unit {
+    public override String UnitType { get => "Magician"; }
     public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy=null) {
+      if (!CastChance) return;
       foreach( var u in adjacentUnits ) ourArmy.Add(u);
-    }
+    } // ! запретить клонирование хилера и рыцаря
+    
     public override void Heal(int healAmount) {} // not healable
   }
 
   class Archer : Unit {
-    int rangedHitPoints = 10;
-    
+    int rangedDamage = 10;
+    public override String UnitType { get => "Archer"; }
     public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy) {
-      opponentArmy.RandomUnit.Damage(rangedHitPoints);
+      if (!CastChance) return;
+      opponentArmy.RandomUnit.Damage(rangedDamage);
     }
+  }
+
+  class Knight : Unit {
+
+    bool _helm, 
+        _shield, 
+        _lance, 
+        _horse;
+    int _helmPoints = 10, 
+        _shieldPoints = 10, 
+        _lancePoints = 10, 
+        _horsePoints = 10;
+    public override String UnitType { get => "Knight"; }
+    public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy) {} // нет спецдействия
+
+    public override int HitPoints { get => base.HitPoints + LanceHitPoints + HorseHitPoints; }
+
+    public override void Damage( int damageAmount ) {
+      if (killed) return;
+
+      int finDamageAmount = damageAmount;
+
+      if (finDamageAmount < ShieldProtectionPoints) return; // щит сдержал удар
+      finDamageAmount -= ShieldProtectionPoints;  // урон ослаблен
+      Shield = false;  // но щита больше нет
+      
+      if (finDamageAmount < HelmProtectionPoints) return; // шлем сдержал удар
+      finDamageAmount -= HelmProtectionPoints;  // урон ослаблен
+      Helm = false;  // но шлема больше нет
+      
+      base.Damage(finDamageAmount);  // оставшийся урон рыцарь терпит как все
+    }
+
+    public override bool Helm { get => _helm; set => _helm = value; }
+    public override bool Horse { get => _horse; set => _horse = value; }
+    public override bool Lance { get => _lance; set => _lance = value; }
+    public override bool Shield { get => _shield; set => _shield = value; }
+
+    public int LanceHitPoints { get { if(Lance) return _lancePoints; return 0; } }
+    public int HorseHitPoints { get { if(Horse) return _horsePoints; return 0; } }
+    public int HelmProtectionPoints { get { if(Helm) return _helmPoints; return 0; } }
+    public int ShieldProtectionPoints { get {if(Shield) return _shieldPoints; return 0; } }
+
+  }
+
+  class Infantry : Unit {
+    
+    bool _helm, 
+        _shield, 
+        _lance, 
+        _horse;
+
+    Infantry() {
+      Helm = true;
+      Horse = true;
+      Lance = true;
+      Shield = true;
+    }
+    public override String UnitType { get => "Infantry"; }
+    public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy=null) {
+      if (!CastChance) return;
+      foreach( var u in adjacentUnits ) {
+        if (u.UnitType != "Knight") continue;  
+        if (Horse) { 
+          u.Horse = true;
+          Horse = false;
+          return;
+          }
+        if (Lance) { 
+          u.Lance = true;
+          Lance = false;
+          return;
+          }
+        if (Shield) { 
+          u.Shield = true;
+          Shield = false;
+          return;
+          }
+        if (Helm) { 
+          u.Helm = true;
+          Helm = false;
+          return;
+          }
+      }
+    } 
+    
+    public override bool Helm { get => _helm; set => _helm = value; }
+    public override bool Horse { get => _horse; set => _horse = value; }
+    public override bool Lance { get => _lance; set => _lance = value; }
+    public override bool Shield { get => _shield; set => _shield = value; }    
   }
   
   public abstract class Army {
@@ -112,7 +239,7 @@ class Program {
       _units.Add(u); 
     }
 
-    public Army ( List <int> listOfUnits ) {
+    public Army ( List <int> listOfUnits ) { // по ID
       _units = new List <Unit> ();
       
       foreach(var n in listOfUnits) {
@@ -121,7 +248,7 @@ class Program {
       }
     }
 
-    public Army ( List <String> listOfUnits ) {
+    public Army ( List <String> listOfUnits ) { // по именам
       _units = new List <Unit> ();
 
       foreach(var n in listOfUnits) {
@@ -130,7 +257,7 @@ class Program {
       }
     }
 
-    public Unit RandomUnit { 
+    public Unit RandomUnit { // случайный юнит из армии для каста стрелка
       get {
         Random r = new Random();
         int index = r.Next(_units.Count);
@@ -202,15 +329,16 @@ class Program {
   }
 
 
+
   public static void Main (string[] args) {
     Console.WriteLine ("Hello World");
     var listOfInt = new List <int> () {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23};
     FormationColumnX3 army = new FormationColumnX3(listOfInt) ;
     
-    var healer = new Healer("Д-р Пилюлькин");
+    var healer = new Healer("Doctor Healer");
 
     army.Add(healer);
-    army.Add(new Healer("Д-р Стекляшкин"));
+    army.Add(new Healer("Doctor House"));
     army.Print();
     
     army.CastAll(null);
@@ -226,12 +354,6 @@ class Program {
     
     WhiteArmy.Champ.Damage(RedArmy.Champ.HitPoints);
     if(WhiteArmy.Champ.Alive) RedArmy.Champ.Damage(WhiteArmy.Champ.HitPoints);
-    RedArmy.CastAll(WhiteArmy);
+    RedArmy.CastAll(WhiteArmy); // ход 1 штука
   }
 }
-
-//YAGNI - реализуем только те функции и структуры данных, которые нужны для конкреного действия - определения соседних юнитов
-
-//DRY - AdjacentUnits3 тут переписана по сравнению с предыдущим кодом
-
-//KISS
