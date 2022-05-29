@@ -93,7 +93,7 @@ class Program {
   }
       
   class Healer : Unit {
-
+    
     private int healAmount = 10;
     public Healer(String name) : base(name) {} // запускает конструктор базового класса
     
@@ -110,7 +110,7 @@ class Program {
   }
 
   class Magician : Unit {
-
+    public Magician(String name) : base(name) { }
     public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy=null) {
       if (!CastChance) return;
       foreach (var u in adjacentUnits)
@@ -124,7 +124,7 @@ class Program {
 
   class Archer : Unit {
     int rangedDamage = 10;
-
+        public Archer(String name) : base(name) { }
     public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy) {
       if (!CastChance) return;
       opponentArmy.RandomUnit.Damage(rangedDamage);
@@ -150,7 +150,21 @@ class Program {
         _lancePoints = 10, 
         _horsePoints = 10;
 
-    public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy) {} // нет спецдействия
+    public Knight () : base()
+    {
+            Helm = true;
+            Horse = true;
+            Lance = true;
+            Shield = true;
+    }
+    public Knight(String name) : base(name) 
+    {
+            Helm = true;
+            Horse = true;
+            Lance = true;
+            Shield = true;
+    }
+        public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy) {} // нет спецдействия
 
     public override int HitPoints { get => base.HitPoints + LanceHitPoints + HorseHitPoints; }
 
@@ -188,13 +202,20 @@ class Program {
         _lance, 
         _horse;
 
-    Infantry() {
+    public Infantry() : base() {
       Helm = true;
       Horse = true;
       Lance = true;
       Shield = true;
     }
 
+    public Infantry(String name) : base(name) 
+    {
+      Helm = true;
+      Horse = true;
+      Lance = true;
+      Shield = true;
+    }
     public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy=null) {
       if (!CastChance) return;
       foreach( var u in adjacentUnits ) {
@@ -228,7 +249,7 @@ class Program {
 
   }
   
-  public abstract class Army {
+  public class Army {
     protected List <Unit> _units;
     public Unit Champ { get => _units[0]; }
     public int ChampHitPoints { get => _units[0].HitPoints; } 
@@ -237,22 +258,27 @@ class Program {
       _units.Add(u); 
     }
 
-    public Army ( List <int> listOfUnits ) { // по ID
-      _units = new List <Unit> ();
-      
+    public Army()
+    {
+      _units = new List<Unit>();
+    }
+    public Army ( List <int> listOfUnits ) : this() { // по ID
       foreach(var n in listOfUnits) {
         var u = new Unit(n);
         _units.Add( u );
       }
     }
 
-    public Army ( List <String> listOfUnits ) { // по именам
-      _units = new List <Unit> ();
-
+    public Army ( List <String> listOfUnits ) : this() { // по именам
       foreach(var n in listOfUnits) {
         var u = new Unit(n);
         _units.Add( u );
       }
+    }
+
+    public Army(Army other) : this()
+    {
+            _units = other._units;
     }
 
     public Unit RandomUnit { // случайный юнит из армии для каста стрелка
@@ -272,62 +298,74 @@ class Program {
       foreach(var u in _units) u.Print();
     }
 
-    public abstract List <Unit> AdjacentUnits( int index );
+    
 
-    public void CastAll(Army opponentArmy) {
-      for(var i=1; i<_units.Count; i++) {
-        var superUnit = _units[i];
-        if(superUnit.Alive) {
-          var neighborsList = AdjacentUnits(i);
-          superUnit.Cast(neighborsList, this, opponentArmy);
-          }
+  }
+    public abstract class Formation : Army 
+    {
+        public Formation() { }
+        public Formation(Army army) : base(army) { }
+        public Formation(List<int> listOfUnits) : base(listOfUnits) { }
+        public Formation(List<String> listOfUnits) : base(listOfUnits) { }
+        public abstract List<Unit> AdjacentUnits(int index);
+        public void CastAll(Army opponentArmy)
+        {
+            for (var i = 1; i < _units.Count; i++)
+            {
+                var superUnit = _units[i];
+                if (superUnit.Alive)
+                {
+                    var neighborsList = AdjacentUnits(i);
+                    superUnit.Cast(neighborsList, this, opponentArmy);
+                }
+            }
+        }
+
+    }
+    class FormationColumnX3 : Formation
+    {
+        public FormationColumnX3(Army army) : base(army) { }
+        public FormationColumnX3(List<int> listOfUnits) : base(listOfUnits) { }
+        public FormationColumnX3(List<String> listOfUnits) : base(listOfUnits) { }
+        public override List<Unit> AdjacentUnits(int index)
+        {
+            var formationLeftFlank = new List<int>() { -3, -1, 2, 3 };
+            var formationCenter = new List<int>() { -3, -2, -1, 1, 2, 3 };
+            var formationRightFlank = new List<int>() { -3, -2, 1, 3 };
+
+            // для колонны по 3
+            List<Unit> a = new List<Unit>();
+
+            int j = index % 3;
+            switch (j)
+            {
+                case 0:
+                    foreach (int i in formationCenter)
+                        if (indexIsValid(index + i)) a.Add(_units[index + i]);
+                    break;
+
+                case 1:
+                    foreach (int i in formationLeftFlank)
+                        if (indexIsValid(index + i)) a.Add(_units[index + i]);
+                    break;
+
+                case 2:
+                    foreach (int i in formationRightFlank)
+                        if (indexIsValid(index + i)) a.Add(_units[index + i]);
+                    break;
+            }
+            //foreach( var u in a ) u.Print();
+            return a;
+
         }
     }
-  }
 
-  class FormationColumnX3 : Army {
-
-    public FormationColumnX3 ( List <int> listOfUnits ) : base(listOfUnits) {}
-    public FormationColumnX3 ( List <String> listOfUnits ) : base(listOfUnits) {} 
-    
-    public override List <Unit> AdjacentUnits( int index ) {
-
-      var formationLeftFlank = new List <int> () {-3, -1, 2, 3};
-      var formationCenter = new List <int> () {-3, -2, -1, 1, 2, 3};
-      var formationRightFlank = new List <int> () {-3, -2, 1, 3};
-
-      // для колонны по 3
-      List <Unit> a = new List <Unit> ();
-
-      int j = index % 3;
-      switch ( j ) {
-
-        case 0:
-          foreach( int i in formationCenter ) 
-            if (indexIsValid(index+i)) a.Add(_units[index+i]);
-          break;
-
-        case 1:
-          foreach( int i in formationLeftFlank ) 
-            if (indexIsValid(index+i)) a.Add(_units[index+i]);
-          break;
-          
-        case 2:
-          foreach( int i in formationRightFlank ) 
-            if (indexIsValid(index+i)) a.Add(_units[index+i]);
-          break;
-      }
-      //foreach( var u in a ) u.Print();
-      return a;
-    }
-  }
-
-    class Opponents
+    public class Opponents
     {
-        Tuple<Army, Army> Opp;
-        public Opponents(Army Red, Army White)
+        Tuple<Formation, Formation> Opp;
+        public Opponents(Formation Red, Formation White)
         {
-            Opp = new Tuple<Army, Army> (Red, White);
+            Opp = new Tuple<Formation, Formation> (Red, White);
         }
 
         public Opponents (Opponents other) : this(other.Opp.Item1, other.Opp.Item2)
@@ -370,6 +408,100 @@ class Program {
         }
     }
 
+    static void ShowMenu ( String menu = "(Esc)Exit (U)ndo (R)edo (Enter)Move" )
+    {
+        Console.WriteLine(menu);
+    }
+    static void GameControl ()
+    {
+        ConsoleKey key;
+        
+        Console.Clear();
+
+        ShowMenu();
+        while ((key = Console.ReadKey().Key) != ConsoleKey.Escape)
+        {
+            
+            switch (key)
+            {
+                case ConsoleKey.U:
+                    Console.WriteLine("Undo");
+                    break;
+                case ConsoleKey.R:
+                    Console.WriteLine("Redo");
+                    break;
+                case ConsoleKey.Enter:
+                    Console.WriteLine("Move");
+                    break;
+                default:
+                    Console.WriteLine("В смысле?");
+                    break;
+            }
+            ShowMenu();
+        }
+    }
+
+    static Opponents SelectArmy( )
+    {
+        Army armyRed = new();
+        Army armyWhite = new();
+        ConsoleKey key;
+
+        ShowMenu("Выберите юнит: (Esc)Выход (K)night (I)nfantry (M)agician (H)ealer (A)rcher (T)humbleweed");
+        while ((key = Console.ReadKey().Key) != ConsoleKey.Escape)
+        {
+
+            switch (key)
+            {
+                case ConsoleKey.K:
+                    Console.WriteLine("Adding knight");
+                    Knight K = new("Д.Кихот");
+                    armyRed.Add(K);
+                    break;
+                case ConsoleKey.I:
+                    Console.WriteLine("Adding infantry");
+                    Infantry I = new("С.Пансо");
+                    armyRed.Add(I);
+                    break;
+                case ConsoleKey.M:
+                    Console.WriteLine("Adding magician");
+                    Magician M = new("Мэрлин");
+                    armyRed.Add(M);
+                    break;
+                case ConsoleKey.H:
+                    Console.WriteLine("Adding healer");
+                    Healer H = new("Стекляшкин");
+                    armyRed.Add(H);
+                    break;
+                case ConsoleKey.A:
+                    Console.WriteLine("Adding archer");
+                    Archer A = new("Леголас");
+                    armyRed.Add(A);
+                    break;
+                case ConsoleKey.T:
+                    Console.WriteLine("Adding thumbleweed");
+                    //Thumbleweed T = new("Ком с горы");
+                    //armyRed.Add(T);
+                    break;
+                case ConsoleKey.P:
+                    Console.WriteLine("Состав армии");
+                    armyRed.Print();
+                    break;
+                default:
+                    Console.WriteLine("В смысле?");
+                    break;
+            }
+            ShowMenu("Выберите юнит: (Esc)Выход (K)night (I)nfantry (M)agician (H)ealer (A)rcher (T)humbleweed");
+        }
+
+        FormationColumnX3 formationRed = new FormationColumnX3(armyRed);
+        FormationColumnX3 formationWhite = new FormationColumnX3(armyWhite);
+
+        Opponents opponents = new Opponents(formationRed, formationWhite);
+
+        return opponents;
+    }
+
     public static void Main (string[] args) {
     Console.WriteLine ("Hello World");
     var listOfInt = new List <int> () {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23};
@@ -395,5 +527,8 @@ class Program {
     WhiteArmy.Champ.Damage(RedArmy.Champ.HitPoints);
     if(WhiteArmy.Champ.Alive) RedArmy.Champ.Damage(WhiteArmy.Champ.HitPoints);
     RedArmy.CastAll(WhiteArmy); // ход 1 штука
+
+        SelectArmy();
+        GameControl();
   }
 }
