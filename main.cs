@@ -66,7 +66,7 @@ class Program {
     }
     
     public void Print() {
-      Console.WriteLine("{0}:{1}", _id, Name);
+      Console.WriteLine("{0}:{1}:{2}", ID, Name, CurrentHealth);
     }
 
     public bool CastChance {
@@ -260,7 +260,8 @@ class Program {
 
   }
   
-  public class Army {
+  public class Army 
+  {
     protected List <Unit> _units;
     
     
@@ -302,20 +303,21 @@ class Program {
       if ( 0 <= index && index < _units.Count ) return true;
       return false;
     }
-        public void Regroup()
-        {
+    public void Regroup()
+    {
             for (var i= 0; i < _units.Count; i++)
             {
                 if (_units[i].Killed) _units.Remove(_units[i]);
             }
-        }
-        public void Print() {
+    }
+    public void Print() 
+    {
       foreach(var u in _units) u.Print();
     }
   }
     public abstract class Formation : Army 
     {
-        public Unit Champ { get => _units[0]; }
+        public Unit Champ { get => _units[0]; }     //ArgumentOutOfRangeException
         public int ChampHitPoints { get => _units[0].HitPoints; }
         public Formation() { }
         public Formation(Army army) : base(army) { }
@@ -410,6 +412,14 @@ class Program {
         }
         public Opponents (Opponents other) : this(other.Opp.Item1, other.Opp.Item2)
         {  
+        }
+
+        public void Print()
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Red.Print();
+            Console.ForegroundColor = ConsoleColor.White;
+            White.Print();
         }
     }
     class History 
@@ -542,7 +552,7 @@ class Program {
             ShowMenu("Выберите юнит: (Esc)Выход (K)Рыцарь (I)Пехотинец (M)Маг (H)Целитель (A)Лучник (T)Перекати-поле");
         }
     }
-
+    
     private static void SelectFormationMenu(Army armyRed, Army armyWhite, out Formation red, out Formation white)
     {
         ConsoleKey key;
@@ -584,9 +594,9 @@ class Program {
         int budgetRed = 200;
         int budgetWhite = 200;
 
-        Console.WriteLine("Армия красных\n");
+        Console.WriteLine("\n\nАрмия красных\n");
         SelectArmyMenu(armyRed, budgetRed);
-        Console.WriteLine("Армия белых\n");
+        Console.WriteLine("\n\nАрмия белых\n");
         SelectArmyMenu(armyWhite, budgetWhite);
 
         Formation formationRed = null; 
@@ -633,6 +643,8 @@ class Program {
                     if (RedArmy.Champ.Alive) WhiteArmy.Champ.Damage(RedArmy.Champ.HitPoints);
                     WhiteArmy.CastAll(RedArmy); // ход 1 штука
 
+                    opponents.Print();
+
                     RedArmy.Regroup();
                     WhiteArmy.Regroup();
 
@@ -648,34 +660,6 @@ class Program {
 
     public static void Main (string[] args) {
     
-        /*
-          
-         Console.WriteLine ("Hello World");
-    var listOfInt = new List <int> () {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23};
-    FormationColumnX3 army = new FormationColumnX3(listOfInt) ;
-    
-    var healer = new Healer("Doctor Healer");
-
-    army.Add(healer);
-    army.Add(new Healer("Doctor House"));
-    army.Print();
-    
-    army.CastAll(null);
-
-    var listOfStr = new List <String> () {"Gendalf","Frodo"};
-
-    FormationColumnX3 RedArmy = new FormationColumnX3(listOfStr);
-    FormationColumnX3 WhiteArmy = new FormationColumnX3(listOfStr);
-
-    Console.WriteLine();
-    RedArmy.Champ.Print();
-
-    
-    WhiteArmy.Champ.Damage(RedArmy.Champ.HitPoints);
-    if(WhiteArmy.Champ.Alive) RedArmy.Champ.Damage(WhiteArmy.Champ.HitPoints);
-    RedArmy.CastAll(WhiteArmy); // ход 1 штука
-        */
-
     Opponents opponents = SelectArmy();
     GameControl(opponents);
   }
