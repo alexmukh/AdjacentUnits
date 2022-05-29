@@ -24,7 +24,7 @@ class Program {
     public bool Alive { get => !killed; }
     public bool Killed { get => killed; }
     public int ID { get => _id; set => _id = value; }
-    public int Cost { get => _cost; /*set => _cost = value;*/ }
+    public int Cost { get => _cost; }
     public int Attack { get; set; }
     public int Defence { get; set; }
     public virtual int HitPoints { get => _hitPoints; }
@@ -92,7 +92,7 @@ class Program {
     int ID { get; set; }
     int Attack { get; set; }
     int Defence { get; set; }
-    int Cost { get; /*set;*/ }
+    int Cost { get; }
   }
       
   class Healer : Unit {
@@ -299,18 +299,13 @@ class Program {
         return _units[index];
       }
     }
-    
     public bool indexIsValid(int index) {
       if ( 0 <= index && index < _units.Count ) return true;
       return false;
     } 
-
     public void Print() {
       foreach(var u in _units) u.Print();
     }
-
-    
-
   }
     public abstract class Formation : Army 
     {
@@ -331,7 +326,6 @@ class Program {
                 }
             }
         }
-
     }
     class FormationColumnX3 : Formation
     {
@@ -367,10 +361,36 @@ class Program {
             }
             //foreach( var u in a ) u.Print();
             return a;
-
         }
     }
+    class FormationColumnX1 : Formation
+    {
+        public FormationColumnX1(Army army) : base(army) { }
+        public FormationColumnX1(List<int> listOfUnits) : base(listOfUnits) { }
+        public FormationColumnX1(List<String> listOfUnits) : base(listOfUnits) { }
+        public override List<Unit> AdjacentUnits(int index)
+        {
+            List<Unit> a = new List<Unit>();
 
+            if (indexIsValid(index - 1)) a.Add(_units[index - 1]);
+            if (indexIsValid(index + 1)) a.Add(_units[index + 1]);
+            return a;
+        }
+    }
+    class FormationLine : Formation
+    {
+        public FormationLine(Army army) : base(army) { }
+        public FormationLine(List<int> listOfUnits) : base(listOfUnits) { }
+        public FormationLine(List<String> listOfUnits) : base(listOfUnits) { }
+        public override List<Unit> AdjacentUnits(int index)
+        {
+            List<Unit> a = new List<Unit>();
+
+            if (indexIsValid(index - 1)) a.Add(_units[index - 1]);
+            if (indexIsValid(index + 1)) a.Add(_units[index + 1]);
+            return a;
+        }
+    }
     public class Opponents
     {
         Tuple<Formation, Formation> Opp;
@@ -378,7 +398,6 @@ class Program {
         {
             Opp = new Tuple<Formation, Formation> (Red, White);
         }
-
         public Opponents (Opponents other) : this(other.Opp.Item1, other.Opp.Item2)
         {  
         }
@@ -392,12 +411,9 @@ class Program {
         {
             Undo.Push (S);
         }
-
         public bool GetFromHistory ( ref Opponents S )
         {
-
             var Current = new Opponents(S);
-
             if ( Undo.TryPop(out S) )
             {
                 Redo.Push(Current);
@@ -405,11 +421,9 @@ class Program {
             }
             return false;
         }
-
         public bool RedoHistory ( ref Opponents S )
         {
             var Current = new Opponents(S);
-
             if ( Redo.TryPop(out S) )
             {
                 Undo.Push(Current);
@@ -418,7 +432,6 @@ class Program {
             return false;
         }
     }
-
     static void ShowMenu ( String menu = "(Esc)Exit (U)ndo (R)edo (Enter)Move" )
     {
         Console.WriteLine(menu);
@@ -426,13 +439,10 @@ class Program {
     static void GameControl ()
     {
         ConsoleKey key;
-        
-        Console.Clear();
-
+        //Console.Clear();
         ShowMenu();
         while ((key = Console.ReadKey().Key) != ConsoleKey.Escape)
         {
-            
             switch (key)
             {
                 case ConsoleKey.U:
@@ -451,29 +461,22 @@ class Program {
             ShowMenu();
         }
     }
-
-    static Opponents SelectArmy( )
+    static void SelectArmyMenu( Army army, int budget ) 
     {
-        Army armyRed = new();
-        Army armyWhite = new();
-        int budgetRed = 1000;
-        int budgetWhite = 1000;
-
         ConsoleKey key;
-        Console.WriteLine("Милорд, в Вашей казне {0} голды.", budgetRed);
-        ShowMenu("Выберите юнит: (Esc)Выход (K)night (I)nfantry (M)agician (H)ealer (A)rcher (T)humbleweed");
+        Console.WriteLine("Милорд, в Вашей казне {0} голды.", budget);
+        ShowMenu("Выберите юнит: (Esc)Выход (K)Рыцарь (I)Пехотинец (M)Маг (H)Целитель (A)Лучник (T)Перекати-поле");
         while ((key = Console.ReadKey().Key) != ConsoleKey.Escape)
         {
-
             switch (key)
             {
                 case ConsoleKey.K:
                     Knight K = new("Д.Кихот");
-                    if (K.Cost <= budgetRed)
+                    if (K.Cost <= budget)
                     {
                         Console.WriteLine("Рыцарь {0} пополнил наши ряды за {1} голды", K.Name, K.Cost);
-                        armyRed.Add(K);
-                        budgetRed -= K.Cost;
+                        army.Add(K);
+                        budget -= K.Cost;
                     }
                     else
                     {
@@ -481,24 +484,56 @@ class Program {
                     }
                     break;
                 case ConsoleKey.I:
-                    Console.WriteLine("Adding infantry");
                     Infantry I = new("С.Пансо");
-                    armyRed.Add(I);
+                    if (I.Cost <= budget)
+                    {
+                        Console.WriteLine("Пехотинец {0} пополнил наши ряды за {1} голды", I.Name, I.Cost);
+                        army.Add(I);
+                        budget -= I.Cost;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Казна пуста, не велите казнить...");
+                    }
                     break;
                 case ConsoleKey.M:
-                    Console.WriteLine("Adding magician");
                     Magician M = new("Мэрлин");
-                    armyRed.Add(M);
+                    if (M.Cost <= budget)
+                    {
+                        Console.WriteLine("Маг {0} пополнил наши ряды за {1} голды", M.Name, M.Cost);
+                        army.Add(M);
+                        budget -= M.Cost;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Казна пуста, не велите казнить...");
+                    }
                     break;
                 case ConsoleKey.H:
-                    Console.WriteLine("Adding healer");
                     Healer H = new("Стекляшкин");
-                    armyRed.Add(H);
+                    if (H.Cost <= budget)
+                    {
+                        Console.WriteLine("Целитель {0} пополнил наши ряды за {1} голды", H.Name, H.Cost);
+                        army.Add(H);
+                        budget -= H.Cost;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Казна пуста, не велите казнить...");
+                    }
                     break;
                 case ConsoleKey.A:
-                    Console.WriteLine("Adding archer");
                     Archer A = new("Леголас");
-                    armyRed.Add(A);
+                    if (A.Cost <= budget)
+                    {
+                        Console.WriteLine("Лучник {0} пополнил наши ряды за {1} голды", A.Name, A.Cost);
+                        army.Add(A);
+                        budget -= A.Cost;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Казна пуста, не велите казнить...");
+                    }
                     break;
                 case ConsoleKey.T:
                     Console.WriteLine("Adding thumbleweed");
@@ -507,18 +542,61 @@ class Program {
                     break;
                 case ConsoleKey.P:
                     Console.WriteLine("Состав армии");
-                    armyRed.Print();
+                    army.Print();
                     break;
                 default:
                     Console.WriteLine("В смысле?");
                     break;
             }
-            Console.WriteLine("На счету {0}", budgetRed);
-            ShowMenu("Выберите юнит: (Esc)Выход (K)night (I)nfantry (M)agician (H)ealer (A)rcher (T)humbleweed");
+            Console.WriteLine("На счету {0}", budget);
+            ShowMenu("Выберите юнит: (Esc)Выход (K)Рыцарь (I)Пехотинец (M)Маг (H)Целитель (A)Лучник (T)Перекати-поле");
         }
+    }
 
-        FormationColumnX3 formationRed = new FormationColumnX3(armyRed);
-        FormationColumnX3 formationWhite = new FormationColumnX3(armyWhite);
+    static void SelectFormationMenu(Army armyRed, Army armyWhite, Formation red, Formation white)
+    {
+        ConsoleKey key;
+        ShowMenu("Выберите тип построения - (1)Шеренга (2)Колонна по одному (3)Колонна по три (Enter)Подтвердить и продолжить");
+        while ((key = Console.ReadKey().Key) != ConsoleKey.Enter)
+        {
+            switch (key)
+            {
+                case ConsoleKey.D1:
+                    Console.WriteLine("Шеренга");
+                    red = new FormationLine(armyRed);
+                    white = new FormationLine(armyWhite);
+                    break;
+                case ConsoleKey.D2:
+                    Console.WriteLine("Колонна по одному");
+                    red = new FormationColumnX1(armyRed);
+                    white = new FormationColumnX1(armyWhite);
+                    break;
+                case ConsoleKey.D3:
+                    Console.WriteLine("Колонна по три");
+                    red = new FormationColumnX3(armyRed);
+                    white = new FormationColumnX3(armyWhite);
+                    break;
+                default:
+                    Console.WriteLine("В смысле?");
+                    break;
+            }
+            ShowMenu("Выберите тип построения - (1)Шеренга (2)Колонна по одному (3)Колонна по три (Enter)Подтвердить и продолжить");
+        }
+    }
+    static Opponents SelectArmy( )
+    {
+        Army armyRed = new();
+        Army armyWhite = new();
+        int budgetRed = 1000;
+        int budgetWhite = 1000;
+
+        SelectArmyMenu(armyRed, budgetRed);
+        SelectArmyMenu(armyWhite, budgetWhite);
+
+        Formation formationRed = null; 
+        Formation formationWhite = null;
+
+        SelectFormationMenu(armyRed,armyWhite,formationRed,formationWhite);
 
         Opponents opponents = new Opponents(formationRed, formationWhite);
 
