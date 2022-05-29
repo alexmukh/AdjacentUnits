@@ -303,12 +303,14 @@ class Program {
       if ( 0 <= index && index < _units.Count ) return true;
       return false;
     }
-    public void Regroup()
+    public bool Regroup()
     {
             for (var i= 0; i < _units.Count; i++)
             {
                 if (_units[i].Killed) _units.Remove(_units[i]);
             }
+            if (_units.Count > 0) return true;
+            return false;
     }
     public void Print() 
     {
@@ -618,6 +620,8 @@ class Program {
 
         History epic = new();
 
+        bool armyDestroyed = false;
+
         //Console.Clear();
         ShowMenu();
         while ((key = Console.ReadKey().Key) != ConsoleKey.Escape)
@@ -627,13 +631,21 @@ class Program {
                 case ConsoleKey.U:
                     Console.WriteLine("Undo");
                     epic.UndoHistory(ref opponents);
+                    opponents.Print();
                     break;
                 case ConsoleKey.R:
                     Console.WriteLine("Redo");
                     epic.RedoHistory(ref opponents);
+                    opponents.Print();
                     break;
                 case ConsoleKey.Enter:
                     Console.WriteLine("Move");
+
+                    if (armyDestroyed)
+                    {
+                        Console.WriteLine("Продолжение невозможно...");
+                        break;
+                    }
 
                     WhiteArmy.Champ.Damage(RedArmy.Champ.HitPoints);
                     if (WhiteArmy.Champ.Alive) RedArmy.Champ.Damage(WhiteArmy.Champ.HitPoints);
@@ -645,8 +657,18 @@ class Program {
 
                     opponents.Print();
 
-                    RedArmy.Regroup();
-                    WhiteArmy.Regroup();
+                    if (!RedArmy.Regroup())
+                    {
+                        Console.WriteLine("Армия разбита...");
+                        armyDestroyed = true;
+                        break;
+                    }
+                    if(!WhiteArmy.Regroup())
+                    {
+                        Console.WriteLine("Армия разбита...");
+                        armyDestroyed = true;
+                        break;
+                    }
 
                     epic.SaveHistory(opponents);
                     break;
