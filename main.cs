@@ -9,8 +9,7 @@ class Program {
     int _id;
     int _hitPoints = 10;
     String _name;
-    int _cost;
-    // для использования методов класса String в дальнейшем
+    int _cost = 10;
 
     Double _expectation = 0.5;
     
@@ -25,7 +24,9 @@ class Program {
     public bool Alive { get => !killed; }
     public bool Killed { get => killed; }
     public int ID { get => _id; set => _id = value; }
-    public int Cost { get => _cost; set => _cost = value; }
+    public int Cost { get => _cost; /*set => _cost = value;*/ }
+    public int Attack { get; set; }
+    public int Defence { get; set; }
     public virtual int HitPoints { get => _hitPoints; }
     
     public Unit() {
@@ -89,12 +90,16 @@ class Program {
     String Name { get; set; }  
     int HitPoints { get; }
     int ID { get; set; }
-    int Cost { get; set; }
+    int Attack { get; set; }
+    int Defence { get; set; }
+    int Cost { get; /*set;*/ }
   }
       
   class Healer : Unit {
     
     private int healAmount = 10;
+
+    public new int Cost { get => base.Cost*4; }
     public Healer(String name) : base(name) {} // запускает конструктор базового класса
     
     public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy=null) {
@@ -111,7 +116,9 @@ class Program {
 
   class Magician : Unit {
     public Magician(String name) : base(name) { }
-    public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy=null) {
+       public new int Cost { get => base.Cost * 4; }
+
+        public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy=null) {
       if (!CastChance) return;
       foreach (var u in adjacentUnits)
       {
@@ -125,7 +132,9 @@ class Program {
   class Archer : Unit {
     int rangedDamage = 10;
         public Archer(String name) : base(name) { }
-    public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy) {
+        public new int Cost { get => base.Cost * 2; }
+
+        public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy) {
       if (!CastChance) return;
       opponentArmy.RandomUnit.Damage(rangedDamage);
     }
@@ -164,6 +173,8 @@ class Program {
             Lance = true;
             Shield = true;
     }
+        public new int Cost { get => base.Cost * 4; }
+
         public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy) {} // нет спецдействия
 
     public override int HitPoints { get => base.HitPoints + LanceHitPoints + HorseHitPoints; }
@@ -445,8 +456,11 @@ class Program {
     {
         Army armyRed = new();
         Army armyWhite = new();
-        ConsoleKey key;
+        int budgetRed = 1000;
+        int budgetWhite = 1000;
 
+        ConsoleKey key;
+        Console.WriteLine("Милорд, в Вашей казне {0} голды.", budgetRed);
         ShowMenu("Выберите юнит: (Esc)Выход (K)night (I)nfantry (M)agician (H)ealer (A)rcher (T)humbleweed");
         while ((key = Console.ReadKey().Key) != ConsoleKey.Escape)
         {
@@ -454,9 +468,17 @@ class Program {
             switch (key)
             {
                 case ConsoleKey.K:
-                    Console.WriteLine("Adding knight");
                     Knight K = new("Д.Кихот");
-                    armyRed.Add(K);
+                    if (K.Cost <= budgetRed)
+                    {
+                        Console.WriteLine("Рыцарь {0} пополнил наши ряды за {1} голды", K.Name, K.Cost);
+                        armyRed.Add(K);
+                        budgetRed -= K.Cost;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Казна пуста, не велите казнить...");
+                    }
                     break;
                 case ConsoleKey.I:
                     Console.WriteLine("Adding infantry");
@@ -491,6 +513,7 @@ class Program {
                     Console.WriteLine("В смысле?");
                     break;
             }
+            Console.WriteLine("На счету {0}", budgetRed);
             ShowMenu("Выберите юнит: (Esc)Выход (K)night (I)nfantry (M)agician (H)ealer (A)rcher (T)humbleweed");
         }
 
