@@ -262,8 +262,7 @@ class Program {
   
   public class Army {
     protected List <Unit> _units;
-    public Unit Champ { get => _units[0]; }
-    public int ChampHitPoints { get => _units[0].HitPoints; } 
+    
     
     public void Add ( Unit u) { 
       _units.Add(u); 
@@ -302,13 +301,22 @@ class Program {
     public bool indexIsValid(int index) {
       if ( 0 <= index && index < _units.Count ) return true;
       return false;
-    } 
-    public void Print() {
+    }
+        public void Regroup()
+        {
+            for (var i= 0; i < _units.Count; i++)
+            {
+                if (_units[i].Killed) _units.Remove(_units[i]);
+            }
+        }
+        public void Print() {
       foreach(var u in _units) u.Print();
     }
   }
     public abstract class Formation : Army 
     {
+        public Unit Champ { get => _units[0]; }
+        public int ChampHitPoints { get => _units[0].HitPoints; }
         public Formation() { }
         public Formation(Army army) : base(army) { }
         public Formation(List<int> listOfUnits) : base(listOfUnits) { }
@@ -394,6 +402,8 @@ class Program {
     public class Opponents
     {
         Tuple<Formation, Formation> Opp;
+        public Formation Red { get => Opp.Item1; }
+        public Formation White { get => Opp.Item2; }
         public Opponents(Formation Red, Formation White)
         {
             Opp = new Tuple<Formation, Formation> (Red, White);
@@ -407,11 +417,16 @@ class Program {
         Stack <Opponents> Undo;
         Stack <Opponents> Redo;
 
-        public void SaveToHistory (Opponents S)
+        public History()
+        {
+            Undo = new Stack<Opponents>();
+            Redo = new Stack<Opponents>();
+        }
+        public void SaveHistory (Opponents S)
         {
             Undo.Push (S);
         }
-        public bool GetFromHistory ( ref Opponents S )
+        public bool UndoHistory ( ref Opponents S )
         {
             var Current = new Opponents(S);
             if ( Undo.TryPop(out S) )
@@ -435,31 +450,6 @@ class Program {
     static void ShowMenu ( String menu = "(Esc)Exit (U)ndo (R)edo (Enter)Move" )
     {
         Console.WriteLine(menu);
-    }
-    static void GameControl ()
-    {
-        ConsoleKey key;
-        //Console.Clear();
-        ShowMenu();
-        while ((key = Console.ReadKey().Key) != ConsoleKey.Escape)
-        {
-            switch (key)
-            {
-                case ConsoleKey.U:
-                    Console.WriteLine("Undo");
-                    break;
-                case ConsoleKey.R:
-                    Console.WriteLine("Redo");
-                    break;
-                case ConsoleKey.Enter:
-                    Console.WriteLine("Move");
-                    break;
-                default:
-                    Console.WriteLine("В смысле?");
-                    break;
-            }
-            ShowMenu();
-        }
     }
     static void SelectArmyMenu( Army army, int budget ) 
     {
@@ -553,9 +543,11 @@ class Program {
         }
     }
 
-    static void SelectFormationMenu(Army armyRed, Army armyWhite, Formation red, Formation white)
+    private static void SelectFormationMenu(Army armyRed, Army armyWhite, out Formation red, out Formation white)
     {
         ConsoleKey key;
+        Formation fRed = null;
+        Formation fWhite = null;
         ShowMenu("Выберите тип построения - (1)Шеренга (2)Колонна по одному (3)Колонна по три (Enter)Подтвердить и продолжить");
         while ((key = Console.ReadKey().Key) != ConsoleKey.Enter)
         {
@@ -563,18 +555,18 @@ class Program {
             {
                 case ConsoleKey.D1:
                     Console.WriteLine("Шеренга");
-                    red = new FormationLine(armyRed);
-                    white = new FormationLine(armyWhite);
+                    fRed = new FormationLine(armyRed);
+                    fWhite = new FormationLine(armyWhite);
                     break;
                 case ConsoleKey.D2:
                     Console.WriteLine("Колонна по одному");
-                    red = new FormationColumnX1(armyRed);
-                    white = new FormationColumnX1(armyWhite);
+                    fRed = new FormationColumnX1(armyRed);
+                    fWhite = new FormationColumnX1(armyWhite);
                     break;
                 case ConsoleKey.D3:
                     Console.WriteLine("Колонна по три");
-                    red = new FormationColumnX3(armyRed);
-                    white = new FormationColumnX3(armyWhite);
+                    fRed = new FormationColumnX3(armyRed);
+                    fWhite = new FormationColumnX3(armyWhite);
                     break;
                 default:
                     Console.WriteLine("В смысле?");
@@ -582,29 +574,83 @@ class Program {
             }
             ShowMenu("Выберите тип построения - (1)Шеренга (2)Колонна по одному (3)Колонна по три (Enter)Подтвердить и продолжить");
         }
+        red = fRed;
+        white = fWhite;
     }
     static Opponents SelectArmy( )
     {
         Army armyRed = new();
         Army armyWhite = new();
-        int budgetRed = 1000;
-        int budgetWhite = 1000;
+        int budgetRed = 200;
+        int budgetWhite = 200;
 
+        Console.WriteLine("Армия красных\n");
         SelectArmyMenu(armyRed, budgetRed);
+        Console.WriteLine("Армия белых\n");
         SelectArmyMenu(armyWhite, budgetWhite);
 
         Formation formationRed = null; 
         Formation formationWhite = null;
 
-        SelectFormationMenu(armyRed,armyWhite,formationRed,formationWhite);
+        Console.WriteLine("\nВыбор строя\n");
+        SelectFormationMenu(armyRed,armyWhite,out formationRed,out formationWhite);
 
         Opponents opponents = new Opponents(formationRed, formationWhite);
 
         return opponents;
     }
+    static void GameControl( Opponents opponents)
+    {
+        ConsoleKey key;
+
+        Formation RedArmy = opponents.Red;
+        Formation WhiteArmy = opponents.White;
+
+        History epic = new();
+
+        //Console.Clear();
+        ShowMenu();
+        while ((key = Console.ReadKey().Key) != ConsoleKey.Escape)
+        {
+            switch (key)
+            {
+                case ConsoleKey.U:
+                    Console.WriteLine("Undo");
+                    epic.UndoHistory(ref opponents);
+                    break;
+                case ConsoleKey.R:
+                    Console.WriteLine("Redo");
+                    epic.RedoHistory(ref opponents);
+                    break;
+                case ConsoleKey.Enter:
+                    Console.WriteLine("Move");
+
+                    WhiteArmy.Champ.Damage(RedArmy.Champ.HitPoints);
+                    if (WhiteArmy.Champ.Alive) RedArmy.Champ.Damage(WhiteArmy.Champ.HitPoints);
+                    RedArmy.CastAll(WhiteArmy); // ход 1 штука
+
+                    RedArmy.Champ.Damage(WhiteArmy.Champ.HitPoints);
+                    if (RedArmy.Champ.Alive) WhiteArmy.Champ.Damage(RedArmy.Champ.HitPoints);
+                    WhiteArmy.CastAll(RedArmy); // ход 1 штука
+
+                    RedArmy.Regroup();
+                    WhiteArmy.Regroup();
+
+                    epic.SaveHistory(opponents);
+                    break;
+                default:
+                    Console.WriteLine("В смысле?");
+                    break;
+            }
+            ShowMenu();
+        }
+    }
 
     public static void Main (string[] args) {
-    Console.WriteLine ("Hello World");
+    
+        /*
+          
+         Console.WriteLine ("Hello World");
     var listOfInt = new List <int> () {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23};
     FormationColumnX3 army = new FormationColumnX3(listOfInt) ;
     
@@ -628,8 +674,9 @@ class Program {
     WhiteArmy.Champ.Damage(RedArmy.Champ.HitPoints);
     if(WhiteArmy.Champ.Alive) RedArmy.Champ.Damage(WhiteArmy.Champ.HitPoints);
     RedArmy.CastAll(WhiteArmy); // ход 1 штука
+        */
 
-        SelectArmy();
-        GameControl();
+    Opponents opponents = SelectArmy();
+    GameControl(opponents);
   }
 }
