@@ -2,143 +2,159 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-class Program {
+class Program
+{
 
-  public class Unit : IUnit {
-    
-    int _id;
-    int _hitPoints = 10;
-    String _name;
-    int _cost = 10;
+    public class Unit : IUnit
+    {
 
-    Double _expectation = 0.5;
-    
-    public int maxHealth = 100;
-    public int minHealth = 0;
-    public int currentHealth;
+        int _id;
+        int _hitPoints = 10;
+        String _name;
+        int _cost = 10;
 
-    public bool killed;
+        Double _expectation = 0.5;
 
-    public String Name { get => _name; set => _name = value; }
-    public int CurrentHealth { get => currentHealth; set => currentHealth = value; }
-    public bool Alive { get => !killed; }
-    public bool Killed { get => killed; }
-    public int ID { get => _id; set => _id = value; }
-    public int Cost { get => _cost; }
-    public int Attack { get; set; }
-    public int Defence { get; set; }
-    public virtual int HitPoints { get => _hitPoints; }
-    
-    public Unit() {
-      currentHealth = maxHealth;
-    }
-  
-    public Unit( int n ) : this() {
-      _id = n;
-    } // конструктор по _id
+        public int maxHealth = 100;
+        public int minHealth = 0;
+        public int currentHealth;
 
-    public Unit( String name ) : this() {
-      Name = name;
-    } // конструктор по name
-    
-    public virtual void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy) {}
-    // задаем формат метода Cast для каждого юнита в дальнейшем
-    
-    public virtual void Heal( int healAmount ) {
-      if (killed) return;
+        public bool killed;
 
-      currentHealth += healAmount;
-      if (currentHealth > maxHealth) currentHealth = maxHealth;
-      Console.Write("Healed:");
-      Print(); // для анимации :)
-    }
+        public String Name { get => _name; set => _name = value; }
+        public int CurrentHealth { get => currentHealth; set => currentHealth = value; }
+        public bool Alive { get => !killed; }
+        public bool Killed { get => killed; }
+        public int ID { get => _id; set => _id = value; }
+        public int Cost { get => _cost; }
+        public int Attack { get; set; }
+        public int Defence { get; set; }
+        public virtual int HitPoints { get => _hitPoints; }
 
-    public virtual void Damage( int damageAmount ) {
-      if (killed) return;
-      currentHealth -= damageAmount;
-      if (currentHealth < minHealth) {
-        Destroy();
-      }
-    }
-
-    public void Destroy() {
-      killed = true;
-    }
-    
-    public void Print() {
-      Console.WriteLine("{0}:{1}:{2}", ID, Name, CurrentHealth);
-    }
-
-    public bool CastChance {
-      get 
-      {
-        Random r = new Random();
-      
-        Double chance = (Double)r.Next()/Int32.MaxValue;
-        Console.WriteLine($"The cast chance is {chance}");
-        if ( chance > _expectation ) {
-          Console.WriteLine("KAKAYA JALOSTЬ");
-          return false;
+        public Unit()
+        {
+            currentHealth = maxHealth;
+            _id = idBoss.getID().nextID;
         }
-        return true;
-      }
+
+        public Unit(String name) : this()
+        {
+            Name = name;
+        } // конструктор по name
+
+        public virtual void Cast(List<Unit> adjacentUnits, Army ourArmy, Army opponentArmy) { }
+        // задаем формат метода Cast для каждого юнита в дальнейшем
+
+        public virtual void Heal(int healAmount)
+        {
+            if (killed) return;
+
+            currentHealth += healAmount;
+            if (currentHealth > maxHealth) currentHealth = maxHealth;
+            Console.Write("Healed:");
+            Print(); // для анимации :)
+        }
+
+        public virtual void Damage(int damageAmount)
+        {
+            if (killed) return;
+            currentHealth -= damageAmount;
+            if (currentHealth < minHealth)
+            {
+                Destroy();
+            }
+        }
+
+        public void Destroy()
+        {
+            killed = true;
+        }
+
+        public void Print()
+        {
+            Console.WriteLine("{0}:{1}:{2}", ID, Name, CurrentHealth);
+        }
+
+        public bool CastChance
+        {
+            get
+            {
+                Random r = new Random();
+
+                Double chance = (Double)r.Next() / Int32.MaxValue;
+                Console.WriteLine($"The cast chance is {chance}");
+                if (chance > _expectation)
+                {
+                    Console.WriteLine("KAKAYA JALOSTЬ");
+                    return false;
+                }
+                return true;
+            }
+        }
+
     }
-    
-  }
 
-  public interface IUnit {
-    String Name { get; set; }  
-    int HitPoints { get; }
-    int ID { get; set; }
-    int Attack { get; set; }
-    int Defence { get; set; }
-    int Cost { get; }
-  }
-      
-  class Healer : Unit {
-    
-    private int healAmount = 10;
-
-    public new int Cost { get => base.Cost*4; }
-    public Healer(String name) : base(name) {} // запускает конструктор базового класса
-    
-    public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy=null) {
-      if (!CastChance) return;
-      foreach( var u in adjacentUnits ) u.Heal(healAmount);
-    } // применяем heal на соседних юнитах
-
-    public override void Heal(int healAmount) {
-      Console.WriteLine("Method overriden");
-      base.Heal(healAmount);
-    } // тестирование возможности кастомного лечения
-    
-  }
-
-  class Magician : Unit {
-    public Magician(String name) : base(name) { }
-       public new int Cost { get => base.Cost * 4; }
-
-        public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy=null) {
-      if (!CastChance) return;
-      foreach (var u in adjacentUnits)
-      {
-        if (!(u is Healer || u is Knight)) ourArmy.Add(u); // запрещено клонирование хилера и рыцаря
-      }
+    public interface IUnit
+    {
+        String Name { get; set; }
+        int HitPoints { get; }
+        int ID { get; set; }
+        int Attack { get; set; }
+        int Defence { get; set; }
+        int Cost { get; }
     }
-    
-    public override void Heal(int healAmount) {} // маг не вылечивается
-  }
 
-  class Archer : Unit {
-    int rangedDamage = 10;
+    class Healer : Unit
+    {
+
+        private int healAmount = 10;
+
+        public new int Cost { get => base.Cost * 4; }
+        public Healer(String name) : base(name) { } // запускает конструктор базового класса
+
+        public override void Cast(List<Unit> adjacentUnits, Army ourArmy, Army opponentArmy = null)
+        {
+            if (!CastChance) return;
+            foreach (var u in adjacentUnits) u.Heal(healAmount);
+        } // применяем heal на соседних юнитах
+
+        public override void Heal(int healAmount)
+        {
+            Console.WriteLine("Method overriden");
+            base.Heal(healAmount);
+        } // тестирование возможности кастомного лечения
+
+    }
+
+    class Magician : Unit
+    {
+        public Magician(String name) : base(name) { }
+        public new int Cost { get => base.Cost * 4; }
+
+        public override void Cast(List<Unit> adjacentUnits, Army ourArmy, Army opponentArmy = null)
+        {
+            if (!CastChance) return;
+            foreach (var u in adjacentUnits)
+            {
+                if (!(u is Healer || u is Knight)) ourArmy.Add(u); // запрещено клонирование хилера и рыцаря
+            }
+        }
+
+        public override void Heal(int healAmount) { } // маг не вылечивается
+    }
+
+    class Archer : Unit
+    {
+        int rangedDamage = 10;
         public Archer(String name) : base(name) { }
         public new int Cost { get => base.Cost * 2; }
 
-        public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy) {
-      if (!CastChance) return;
-      opponentArmy.RandomUnit.Damage(rangedDamage);
+        public override void Cast(List<Unit> adjacentUnits, Army ourArmy, Army opponentArmy)
+        {
+            if (!CastChance) return;
+            opponentArmy.RandomUnit.Damage(rangedDamage);
+        }
     }
-  }
 
 
     public interface IArmor
@@ -148,182 +164,192 @@ class Program {
         public bool Shield { get; set; }
         public bool Helm { get; set; }
     }
-  class Knight : Unit, IArmor {
-
-    bool _helm, 
-        _shield, 
-        _lance, 
-        _horse;
-    int _helmPoints = 10, 
-        _shieldPoints = 10, 
-        _lancePoints = 10, 
-        _horsePoints = 10;
-
-    public Knight () : base()
+    class Knight : Unit, IArmor
     {
+
+        bool _helm,
+            _shield,
+            _lance,
+            _horse;
+        int _helmPoints = 10,
+            _shieldPoints = 10,
+            _lancePoints = 10,
+            _horsePoints = 10;
+
+        public Knight() : base()
+        {
             Helm = true;
             Horse = true;
             Lance = true;
             Shield = true;
-    }
-    public Knight(String name) : base(name) 
-    {
+        }
+        public Knight(String name) : base(name)
+        {
             Helm = true;
             Horse = true;
             Lance = true;
             Shield = true;
-    }
+        }
         public new int Cost { get => base.Cost * 4; }
 
-        public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy) {} // нет спецдействия
+        public override void Cast(List<Unit> adjacentUnits, Army ourArmy, Army opponentArmy) { } // нет спецдействия
 
-    public override int HitPoints { get => base.HitPoints + LanceHitPoints + HorseHitPoints; }
+        public override int HitPoints { get => base.HitPoints + LanceHitPoints + HorseHitPoints; }
 
-    public override void Damage( int damageAmount ) {
-      if (killed) return;
+        public override void Damage(int damageAmount)
+        {
+            if (killed) return;
 
-      int finDamageAmount = damageAmount;
+            int finDamageAmount = damageAmount;
 
-      if (finDamageAmount < ShieldProtectionPoints) return; // щит сдержал удар
-      finDamageAmount -= ShieldProtectionPoints;  // урон ослаблен
-      Shield = false;  // но щита больше нет
-      
-      if (finDamageAmount < HelmProtectionPoints) return; // шлем сдержал удар
-      finDamageAmount -= HelmProtectionPoints;  // урон ослаблен
-      Helm = false;  // но шлема больше нет
-      
-      base.Damage(finDamageAmount);  // оставшийся урон рыцарь терпит как все
+            if (finDamageAmount < ShieldProtectionPoints) return; // щит сдержал удар
+            finDamageAmount -= ShieldProtectionPoints;  // урон ослаблен
+            Shield = false;  // но щита больше нет
+
+            if (finDamageAmount < HelmProtectionPoints) return; // шлем сдержал удар
+            finDamageAmount -= HelmProtectionPoints;  // урон ослаблен
+            Helm = false;  // но шлема больше нет
+
+            base.Damage(finDamageAmount);  // оставшийся урон рыцарь терпит как все
+        }
+
+        public bool Helm { get => _helm; set => _helm = value; }
+        public bool Horse { get => _horse; set => _horse = value; }
+        public bool Lance { get => _lance; set => _lance = value; }
+        public bool Shield { get => _shield; set => _shield = value; }
+        public int LanceHitPoints { get { if (Lance) return _lancePoints; return 0; } }
+        public int HorseHitPoints { get { if (Horse) return _horsePoints; return 0; } }
+        public int HelmProtectionPoints { get { if (Helm) return _helmPoints; return 0; } }
+        public int ShieldProtectionPoints { get { if (Shield) return _shieldPoints; return 0; } }
+
     }
 
-    public bool Helm { get => _helm; set => _helm = value; }
-    public bool Horse { get => _horse; set => _horse = value; }
-    public bool Lance { get => _lance; set => _lance = value; }
-    public bool Shield { get => _shield; set => _shield = value; }
-    public int LanceHitPoints { get { if(Lance) return _lancePoints; return 0; } }
-    public int HorseHitPoints { get { if(Horse) return _horsePoints; return 0; } }
-    public int HelmProtectionPoints { get { if(Helm) return _helmPoints; return 0; } }
-    public int ShieldProtectionPoints { get {if(Shield) return _shieldPoints; return 0; } }
-
-  }
-
-  class Infantry : Unit, IArmor {
-    
-    bool _helm, 
-        _shield, 
-        _lance, 
-        _horse;
-
-    public Infantry() : base() {
-      Helm = true;
-      Horse = true;
-      Lance = true;
-      Shield = true;
-    }
-
-    public Infantry(String name) : base(name) 
+    class Infantry : Unit, IArmor
     {
-      Helm = true;
-      Horse = true;
-      Lance = true;
-      Shield = true;
-    }
-    public override void Cast(List <Unit> adjacentUnits, Army ourArmy, Army opponentArmy=null) {
-      if (!CastChance) return;
-      foreach( var u in adjacentUnits ) {
-        if (!(u is Knight)) continue; // проверяем юнит на рыцарство  
-        if (Horse) { 
-          ((Knight)u).Horse = true;
-          Horse = false;
-          return;
-          }
-        if (Lance) { 
-          ((Knight)u).Lance = true;
-          Lance = false;
-          return;
-          }
-        if (Shield) { 
-          ((Knight)u).Shield = true;
-          Shield = false;
-          return;
-          }
-        if (Helm) { 
-          ((Knight)u).Helm = true;
-          Helm = false;
-          return;
-          }
-      }
-    }
+
+        bool _helm,
+            _shield,
+            _lance,
+            _horse;
+
+        public Infantry() : base()
+        {
+            Helm = true;
+            Horse = true;
+            Lance = true;
+            Shield = true;
+        }
+
+        public Infantry(String name) : base(name)
+        {
+            Helm = true;
+            Horse = true;
+            Lance = true;
+            Shield = true;
+        }
+        public override void Cast(List<Unit> adjacentUnits, Army ourArmy, Army opponentArmy = null)
+        {
+            if (!CastChance) return;
+            foreach (var u in adjacentUnits)
+            {
+                if (!(u is Knight)) continue; // проверяем юнит на рыцарство  
+                if (Horse)
+                {
+                    ((Knight)u).Horse = true;
+                    Horse = false;
+                    return;
+                }
+                if (Lance)
+                {
+                    ((Knight)u).Lance = true;
+                    Lance = false;
+                    return;
+                }
+                if (Shield)
+                {
+                    ((Knight)u).Shield = true;
+                    Shield = false;
+                    return;
+                }
+                if (Helm)
+                {
+                    ((Knight)u).Helm = true;
+                    Helm = false;
+                    return;
+                }
+            }
+        }
         public bool Helm { get => _helm; set => _helm = value; }
         public bool Horse { get => _horse; set => _horse = value; }
         public bool Lance { get => _lance; set => _lance = value; }
         public bool Shield { get => _shield; set => _shield = value; }
 
-  }
-  
-  public class Army 
-  {
-    protected List <Unit> _units;
-    
-    
-    public void Add ( Unit u) { 
-      _units.Add(u); 
     }
 
-    public Army()
+    public class Army
     {
-      _units = new List<Unit>();
-    }
-    public Army ( List <int> listOfUnits ) : this() { // по ID
-      foreach(var n in listOfUnits) {
-        var u = new Unit(n);
-        _units.Add( u );
-      }
-    }
+        protected List<Unit> _units;
 
-    public Army ( List <String> listOfUnits ) : this() { // по именам
-      foreach(var n in listOfUnits) {
-        var u = new Unit(n);
-        _units.Add( u );
-      }
-    }
 
-    public Army(Army other) : this()
-    {
+        public void Add(Unit u)
+        {
+            _units.Add(u);
+        }
+
+        public Army()
+        {
+            _units = new List<Unit>();
+        }
+
+
+        public Army(List<String> listOfUnits) : this()
+        { // по именам
+            foreach (var n in listOfUnits)
+            {
+                var u = new Unit(n);
+                _units.Add(u);
+            }
+        }
+
+        public Army(Army other) : this()
+        {
             _units = other._units;
-    }
+        }
 
-    public Unit RandomUnit { // случайный юнит из армии для каста стрелка
-      get {
-        Random r = new Random();
-        int index = r.Next(_units.Count);
-        return _units[index];
-      }
-    }
-    public bool indexIsValid(int index) {
-      if ( 0 <= index && index < _units.Count ) return true;
-      return false;
-    }
-    public bool Regroup()
-    {
-            for (var i= 0; i < _units.Count; i++)
+        public Unit RandomUnit
+        { // случайный юнит из армии для каста стрелка
+            get
+            {
+                Random r = new Random();
+                int index = r.Next(_units.Count);
+                return _units[index];
+            }
+        }
+        public bool indexIsValid(int index)
+        {
+            if (0 <= index && index < _units.Count) return true;
+            return false;
+        }
+        public bool Regroup()
+        {
+            for (var i = 0; i < _units.Count; i++)
             {
                 if (_units[i].Killed) _units.Remove(_units[i]);
             }
             if (_units.Count > 0) return true;
             return false;
+        }
+        public void Print()
+        {
+            foreach (var u in _units) u.Print();
+        }
     }
-    public void Print() 
-    {
-      foreach(var u in _units) u.Print();
-    }
-  }
-    public abstract class Formation : Army 
+    public abstract class Formation : Army
     {
         public Unit Champ { get => _units[0]; }     //ArgumentOutOfRangeException
         public int ChampHitPoints { get => _units[0].HitPoints; }
         public Formation() { }
         public Formation(Army army) : base(army) { }
-        public Formation(List<int> listOfUnits) : base(listOfUnits) { }
         public Formation(List<String> listOfUnits) : base(listOfUnits) { }
         public abstract List<Unit> AdjacentUnits(int index);
         public void CastAll(Army opponentArmy)
@@ -342,7 +368,7 @@ class Program {
     class FormationColumnX3 : Formation
     {
         public FormationColumnX3(Army army) : base(army) { }
-        public FormationColumnX3(List<int> listOfUnits) : base(listOfUnits) { }
+
         public FormationColumnX3(List<String> listOfUnits) : base(listOfUnits) { }
         public override List<Unit> AdjacentUnits(int index)
         {
@@ -378,7 +404,7 @@ class Program {
     class FormationColumnX1 : Formation
     {
         public FormationColumnX1(Army army) : base(army) { }
-        public FormationColumnX1(List<int> listOfUnits) : base(listOfUnits) { }
+
         public FormationColumnX1(List<String> listOfUnits) : base(listOfUnits) { }
         public override List<Unit> AdjacentUnits(int index)
         {
@@ -392,7 +418,7 @@ class Program {
     class FormationLine : Formation
     {
         public FormationLine(Army army) : base(army) { }
-        public FormationLine(List<int> listOfUnits) : base(listOfUnits) { }
+
         public FormationLine(List<String> listOfUnits) : base(listOfUnits) { }
         public override List<Unit> AdjacentUnits(int index)
         {
@@ -410,10 +436,10 @@ class Program {
         public Formation White { get => Opp.Item2; }
         public Opponents(Formation Red, Formation White)
         {
-            Opp = new Tuple<Formation, Formation> (Red, White);
+            Opp = new Tuple<Formation, Formation>(Red, White);
         }
-        public Opponents (Opponents other) : this(other.Opp.Item1, other.Opp.Item2)
-        {  
+        public Opponents(Opponents other) : this(other.Opp.Item1, other.Opp.Item2)
+        {
         }
 
         public void Print()
@@ -424,34 +450,34 @@ class Program {
             White.Print();
         }
     }
-    class History 
+    class History
     {
-        Stack <Opponents> Undo;
-        Stack <Opponents> Redo;
+        Stack<Opponents> Undo;
+        Stack<Opponents> Redo;
 
         public History()
         {
             Undo = new Stack<Opponents>();
             Redo = new Stack<Opponents>();
         }
-        public void SaveHistory (Opponents S)
+        public void SaveHistory(Opponents S)
         {
-            Undo.Push (S);
+            Undo.Push(S);
         }
-        public bool UndoHistory ( ref Opponents S )
+        public bool UndoHistory(ref Opponents S)
         {
             var Current = new Opponents(S);
-            if ( Undo.TryPop(out S) )
+            if (Undo.TryPop(out S))
             {
                 Redo.Push(Current);
                 return true;
             }
             return false;
         }
-        public bool RedoHistory ( ref Opponents S )
+        public bool RedoHistory(ref Opponents S)
         {
             var Current = new Opponents(S);
-            if ( Redo.TryPop(out S) )
+            if (Redo.TryPop(out S))
             {
                 Undo.Push(Current);
                 return true;
@@ -459,16 +485,16 @@ class Program {
             return false;
         }
     }
-    static void ShowMenu ( String menu = "(Esc)Exit (U)ndo (R)edo (Enter)Move" )
+    static void ShowMenu(String menu = "(Esc)Exit (U)ndo (R)edo (Enter)Move")
     {
         Console.WriteLine(menu);
     }
-    static void SelectArmyMenu( Army army, int budget ) 
+    static void SelectArmyMenu(Army army, int budget)
     {
         ConsoleKey key;
         Console.WriteLine("Милорд, в Вашей казне {0} голды.", budget);
         ShowMenu("Выберите юнит: (Esc)Выход (K)Рыцарь (I)Пехотинец (M)Маг (H)Целитель (A)Лучник (T)Перекати-поле");
-        while ((key = Console.ReadKey().Key) != ConsoleKey.Escape)
+        while ((key = Console.ReadKey().Key) != ConsoleKey.Escape && budget > 0 )
         {
             switch (key)
             {
@@ -554,11 +580,11 @@ class Program {
             ShowMenu("Выберите юнит: (Esc)Выход (K)Рыцарь (I)Пехотинец (M)Маг (H)Целитель (A)Лучник (T)Перекати-поле");
         }
     }
-    
+
     private static void SelectFormationMenu(Army armyRed, Army armyWhite, out Formation red, out Formation white)
     {
         ConsoleKey key;
-        Formation fRed = null;
+        Formation? fRed = null;
         Formation fWhite = null;
         ShowMenu("Выберите тип построения - (1)Шеренга (2)Колонна по одному (3)Колонна по три (Enter)Подтвердить и продолжить");
         while ((key = Console.ReadKey().Key) != ConsoleKey.Enter)
@@ -589,7 +615,7 @@ class Program {
         red = fRed;
         white = fWhite;
     }
-    static Opponents SelectArmy( )
+    static Opponents SelectArmy()
     {
         Army armyRed = new();
         Army armyWhite = new();
@@ -601,17 +627,17 @@ class Program {
         Console.WriteLine("\n\nАрмия белых\n");
         SelectArmyMenu(armyWhite, budgetWhite);
 
-        Formation formationRed = null; 
+        Formation formationRed = null;
         Formation formationWhite = null;
 
         Console.WriteLine("\nВыбор строя\n");
-        SelectFormationMenu(armyRed,armyWhite,out formationRed,out formationWhite);
+        SelectFormationMenu(armyRed, armyWhite, out formationRed, out formationWhite);
 
         Opponents opponents = new Opponents(formationRed, formationWhite);
 
         return opponents;
     }
-    static void GameControl( Opponents opponents)
+    static void GameControl(Opponents opponents)
     {
         ConsoleKey key;
 
@@ -659,12 +685,14 @@ class Program {
 
                     if (!RedArmy.Regroup())
                     {
+                        Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine("Армия разбита...");
                         armyDestroyed = true;
                         break;
                     }
-                    if(!WhiteArmy.Regroup())
+                    if (!WhiteArmy.Regroup())
                     {
+                        Console.ForegroundColor = ConsoleColor.White;
                         Console.WriteLine("Армия разбита...");
                         armyDestroyed = true;
                         break;
@@ -680,9 +708,31 @@ class Program {
         }
     }
 
-    public static void Main (string[] args) {
-    
-    Opponents opponents = SelectArmy();
-    GameControl(opponents);
-  }
+    public sealed class idBoss  // #Singleton #Pattern
+    {
+        private static readonly idBoss instance = new idBoss();
+        private int id;
+
+        private idBoss() => id = 1;
+
+        public static idBoss getID()
+        {
+            return instance;
+        }
+
+        public int nextID
+        {
+            get
+            {
+                return id++;
+            }
+        }
+    }
+
+    public static void Main(string[] args) 
+    {
+
+        Opponents opponents = SelectArmy();
+        GameControl(opponents);
+    }
 }
