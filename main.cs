@@ -2,10 +2,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-class Program
+class Program       // #Pattern #Bridge - dotnet console
 {
 
-    public class Unit : IUnit
+    public class Unit : IUnit , ICloneable      // #Pattern #Factory method
     {
 
         int _id;
@@ -82,14 +82,19 @@ class Program
                 Random r = new Random();
 
                 Double chance = (Double)r.Next() / Int32.MaxValue;
-                Console.WriteLine($"The cast chance is {chance}");
+                Console.WriteLine($"Шанс применить способность {chance}");
                 if (chance > _expectation)
                 {
-                    Console.WriteLine("KAKAYA JALOSTЬ");
+                    Console.WriteLine("Неудачная попытка применить способность.");
                     return false;
                 }
                 return true;
             }
+        }
+
+        public object Clone()
+        {
+            return this.MemberwiseClone();
         }
 
     }
@@ -104,7 +109,7 @@ class Program
         int Cost { get; }
     }
 
-    class Healer : Unit
+    class Healer : Unit     // #Pattern #Template method
     {
 
         private int healAmount = 10;
@@ -114,13 +119,14 @@ class Program
 
         public override void Cast(List<Unit> adjacentUnits, Army ourArmy, Army opponentArmy = null)
         {
+            Print();
             if (!CastChance) return;
+            Console.WriteLine("Целитель подлечил соседние юниты.");
             foreach (var u in adjacentUnits) u.Heal(healAmount);
         } // применяем heal на соседних юнитах
 
         public override void Heal(int healAmount)
         {
-            Console.WriteLine("Method overriden");
             base.Heal(healAmount);
         } // тестирование возможности кастомного лечения
 
@@ -133,7 +139,10 @@ class Program
 
         public override void Cast(List<Unit> adjacentUnits, Army ourArmy, Army opponentArmy = null)
         {
+            Print();
             if (!CastChance) return;
+            Console.WriteLine("Маг склонировал соседние юниты.");
+
             foreach (var u in adjacentUnits)
             {
                 if (!(u is Healer || u is Knight)) ourArmy.Add(u); // запрещено клонирование хилера и рыцаря
@@ -151,7 +160,9 @@ class Program
 
         public override void Cast(List<Unit> adjacentUnits, Army ourArmy, Army opponentArmy)
         {
+            Print();
             if (!CastChance) return;
+            Console.WriteLine("Лучник нанес урон случайному юниту противника.");
             opponentArmy.RandomUnit.Damage(rangedDamage);
         }
     }
@@ -194,7 +205,7 @@ class Program
 
         public override void Cast(List<Unit> adjacentUnits, Army ourArmy, Army opponentArmy) { } // нет спецдействия
 
-        public override int HitPoints { get => base.HitPoints + LanceHitPoints + HorseHitPoints; }
+        public override int HitPoints { get => base.HitPoints*2 + LanceHitPoints + HorseHitPoints; }
 
         public override void Damage(int damageAmount)
         {
@@ -249,6 +260,7 @@ class Program
         }
         public override void Cast(List<Unit> adjacentUnits, Army ourArmy, Army opponentArmy = null)
         {
+            Print();
             if (!CastChance) return;
             foreach (var u in adjacentUnits)
             {
@@ -257,24 +269,28 @@ class Program
                 {
                     ((Knight)u).Horse = true;
                     Horse = false;
+                    Console.WriteLine("Пехотинец подвел рыцарю коня.");
                     return;
                 }
                 if (Lance)
                 {
                     ((Knight)u).Lance = true;
                     Lance = false;
+                    Console.WriteLine("Пехотинец подал рыцарю новое копье.");
                     return;
                 }
                 if (Shield)
                 {
                     ((Knight)u).Shield = true;
                     Shield = false;
+                    Console.WriteLine("Пехотинец подал рыцарю щит.");
                     return;
                 }
                 if (Helm)
                 {
                     ((Knight)u).Helm = true;
                     Helm = false;
+                    Console.WriteLine("Пехотинец нашел рыцарю новый шлем.");
                     return;
                 }
             }
@@ -286,7 +302,7 @@ class Program
 
     }
 
-    public class Army
+    public class Army 
     {
         protected List<Unit> _units;
 
@@ -302,18 +318,14 @@ class Program
         }
 
 
-        public Army(List<String> listOfUnits) : this()
-        { // по именам
-            foreach (var n in listOfUnits)
-            {
-                var u = new Unit(n);
-                _units.Add(u);
-            }
-        }
-
-        public Army(Army other) : this()
+        public Army(Army other) 
         {
-            _units = other._units;
+            //_units = new List<Unit>(other._units);
+            _units = new List<Unit>();
+            for (var i = 0; i < other._units.Count; i++)
+            {
+                _units.Add((Unit)other._units[i].Clone());
+            }
         }
 
         public Unit RandomUnit
@@ -344,14 +356,27 @@ class Program
             foreach (var u in _units) u.Print();
         }
     }
-    public abstract class Formation : Army
+    public class Formation : Army, ICloneable
     {
-        public Unit Champ { get => _units[0]; }     //ArgumentOutOfRangeException
+        public Unit Champ 
+        { 
+            get
+            {
+                int i;
+                
+                for (i = 0; i < _units.Count; i++) 
+                    if (_units[i].Alive)
+                        return _units[i];
+
+                return null;
+                 
+            }     
+        }     //ArgumentOutOfRangeException
         public int ChampHitPoints { get => _units[0].HitPoints; }
         public Formation() { }
         public Formation(Army army) : base(army) { }
-        public Formation(List<String> listOfUnits) : base(listOfUnits) { }
-        public abstract List<Unit> AdjacentUnits(int index);
+        //public Formation(List<String> listOfUnits) : base(listOfUnits) { }
+        public virtual List<Unit> AdjacentUnits(int index) { return null; }     // #Pattern #Observer
         public void CastAll(Army opponentArmy)
         {
             for (var i = 1; i < _units.Count; i++)
@@ -364,12 +389,16 @@ class Program
                 }
             }
         }
+        public object Clone()
+        {
+            return (Formation)this.MemberwiseClone();
+        }
     }
     class FormationColumnX3 : Formation
     {
         public FormationColumnX3(Army army) : base(army) { }
 
-        public FormationColumnX3(List<String> listOfUnits) : base(listOfUnits) { }
+        //public FormationColumnX3(List<String> listOfUnits) : base(listOfUnits) { }
         public override List<Unit> AdjacentUnits(int index)
         {
             var formationLeftFlank = new List<int>() { -3, -1, 2, 3 };
@@ -405,7 +434,7 @@ class Program
     {
         public FormationColumnX1(Army army) : base(army) { }
 
-        public FormationColumnX1(List<String> listOfUnits) : base(listOfUnits) { }
+        //public FormationColumnX1(List<String> listOfUnits) : base(listOfUnits) { }
         public override List<Unit> AdjacentUnits(int index)
         {
             List<Unit> a = new List<Unit>();
@@ -419,7 +448,7 @@ class Program
     {
         public FormationLine(Army army) : base(army) { }
 
-        public FormationLine(List<String> listOfUnits) : base(listOfUnits) { }
+        //public FormationLine(List<String> listOfUnits) : base(listOfUnits) { }
         public override List<Unit> AdjacentUnits(int index)
         {
             List<Unit> a = new List<Unit>();
@@ -429,19 +458,25 @@ class Program
             return a;
         }
     }
-    public class Opponents
+    public class Opponents : ICloneable
     {
         Tuple<Formation, Formation> Opp;
         public Formation Red { get => Opp.Item1; }
         public Formation White { get => Opp.Item2; }
-        public Opponents(Formation Red, Formation White)
+        public Opponents(Formation Red, Formation White)        // #Pattern #Prototype
         {
-            Opp = new Tuple<Formation, Formation>(Red, White);
+            Opp = new Tuple<Formation, Formation>((Formation)Red.Clone(), (Formation)White.Clone());
         }
-        public Opponents(Opponents other) : this(other.Opp.Item1, other.Opp.Item2)
+        public Opponents(Opponents other) : this((Formation)other.Opp.Item1.Clone(), (Formation)other.Opp.Item2.Clone())
         {
         }
-
+        public object Clone()   // clone with deepcopy
+        {
+            Formation fRed = new Formation((Formation)Red.Clone());
+            Formation fWhite = new Formation((Formation)White.Clone());
+            Opponents opponents = new Opponents(fRed,fWhite);
+            return opponents;
+        }
         public void Print()
         {
             Console.ForegroundColor = ConsoleColor.Red;
@@ -450,10 +485,15 @@ class Program
             White.Print();
         }
     }
-    class History
+
+    
+
+    class History     // #Pattern #Command
     {
-        Stack<Opponents> Undo;
-        Stack<Opponents> Redo;
+        Stack <Opponents> Undo;
+        Stack <Opponents> Redo;
+
+        
 
         public History()
         {
@@ -462,26 +502,34 @@ class Program
         }
         public void SaveHistory(Opponents S)
         {
-            Undo.Push(S);
+            Undo.Push((Opponents)S.Clone());
         }
         public bool UndoHistory(ref Opponents S)
         {
-            var Current = new Opponents(S);
-            if (Undo.TryPop(out S))
+            Opponents Current = new Opponents(S);
+            Opponents Previous;
+            if (Undo.TryPop(out Previous))
             {
-                Redo.Push(Current);
+                Redo.Push((Opponents)Current.Clone());
+                //Previous.Print();
+                S = Previous;
                 return true;
             }
+            
             return false;
         }
         public bool RedoHistory(ref Opponents S)
         {
             var Current = new Opponents(S);
-            if (Redo.TryPop(out S))
+            Opponents Previous;
+            if (Redo.TryPop(out Previous))
             {
-                Undo.Push(Current);
+                Undo.Push((Opponents)Current.Clone());
+                //Previous.Print();
+                S = Previous;
                 return true;
             }
+
             return false;
         }
     }
@@ -489,7 +537,7 @@ class Program
     {
         Console.WriteLine(menu);
     }
-    static void SelectArmyMenu(Army army, int budget)
+    static void SelectArmyMenu(Army army, int budget)   // #Pattern #Facade
     {
         ConsoleKey key;
         Console.WriteLine("Милорд, в Вашей казне {0} голды.", budget);
@@ -581,7 +629,7 @@ class Program
         }
     }
 
-    private static void SelectFormationMenu(Army armyRed, Army armyWhite, out Formation red, out Formation white)
+    private static void SelectFormationMenu(Army armyRed, Army armyWhite, out Formation red, out Formation white)   
     {
         ConsoleKey key;
         Formation? fRed = null;
@@ -610,7 +658,7 @@ class Program
                     Console.WriteLine("В смысле?");
                     break;
             }
-            ShowMenu("Выберите тип построения - (1)Шеренга (2)Колонна по одному (3)Колонна по три (Enter)Подтвердить и продолжить");
+            //ShowMenu("Выберите тип построения - (1)Шеренга (2)Колонна по одному (3)Колонна по три (Enter)Подтвердить и продолжить");
         }
         red = fRed;
         white = fWhite;
@@ -656,32 +704,44 @@ class Program
             {
                 case ConsoleKey.U:
                     Console.WriteLine("Undo");
-                    epic.UndoHistory(ref opponents);
-                    opponents.Print();
+                    if (epic.UndoHistory(ref opponents))
+                    {
+                        armyDestroyed = false;
+                        opponents.Print();
+                    }
+                    else Console.WriteLine("Нет информации о предыдущем ходе.");
                     break;
                 case ConsoleKey.R:
                     Console.WriteLine("Redo");
-                    epic.RedoHistory(ref opponents);
-                    opponents.Print();
+                    if (epic.RedoHistory(ref opponents))
+                    {
+                        opponents.Print();
+                    }
+                    else Console.WriteLine("Нет информации о последующем ходе.");
                     break;
                 case ConsoleKey.Enter:
                     Console.WriteLine("Move");
 
                     if (armyDestroyed)
                     {
-                        Console.WriteLine("Продолжение невозможно...");
+                        Console.WriteLine("Армия разбита, продолжение невозможно...");
                         break;
                     }
+                    epic.SaveHistory(opponents);
 
                     WhiteArmy.Champ.Damage(RedArmy.Champ.HitPoints);
                     if (WhiteArmy.Champ.Alive) RedArmy.Champ.Damage(WhiteArmy.Champ.HitPoints);
-                    RedArmy.CastAll(WhiteArmy); // ход 1 штука
+                    RedArmy.CastAll(WhiteArmy); // ход красных
 
-                    RedArmy.Champ.Damage(WhiteArmy.Champ.HitPoints);
-                    if (RedArmy.Champ.Alive) WhiteArmy.Champ.Damage(RedArmy.Champ.HitPoints);
-                    WhiteArmy.CastAll(RedArmy); // ход 1 штука
-
-                    opponents.Print();
+                    if(WhiteArmy.Champ!=null)
+                        if (WhiteArmy.Champ.Alive)
+                            RedArmy.Champ.Damage(WhiteArmy.Champ.HitPoints);
+                    if(RedArmy.Champ!=null)
+                        if (RedArmy.Champ.Alive) 
+                            if (WhiteArmy.Champ.Alive) 
+                                WhiteArmy.Champ.Damage(RedArmy.Champ.HitPoints);
+                    
+                    if (WhiteArmy != null) WhiteArmy.CastAll(RedArmy); // ход белых
 
                     if (!RedArmy.Regroup())
                     {
@@ -698,7 +758,7 @@ class Program
                         break;
                     }
 
-                    epic.SaveHistory(opponents);
+                    opponents.Print();
                     break;
                 default:
                     Console.WriteLine("В смысле?");
@@ -713,7 +773,7 @@ class Program
         private static readonly idBoss instance = new idBoss();
         private int id;
 
-        private idBoss() => id = 1;
+        private idBoss() => id = 1;     // #Pattern #Strategy
 
         public static idBoss getID()
         {
