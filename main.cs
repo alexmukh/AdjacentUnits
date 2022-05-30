@@ -532,6 +532,10 @@ class Program       // #Pattern #Bridge - dotnet console
 
             return false;
         }
+        public void ClearRedoHistory()
+        {
+            Redo.Clear();
+        }
     }
     static void ShowMenu(String menu = "(Esc)Exit (U)ndo (R)edo (Enter)Move")
     {
@@ -728,10 +732,16 @@ class Program       // #Pattern #Bridge - dotnet console
                         break;
                     }
                     epic.SaveHistory(opponents);
+                    epic.ClearRedoHistory();
 
-                    WhiteArmy.Champ.Damage(RedArmy.Champ.HitPoints);
-                    if (WhiteArmy.Champ.Alive) RedArmy.Champ.Damage(WhiteArmy.Champ.HitPoints);
-                    RedArmy.CastAll(WhiteArmy); // ход красных
+                    if(WhiteArmy.Champ!=null)
+                        if(WhiteArmy.Champ.Alive)
+                            WhiteArmy.Champ.Damage(RedArmy.Champ.HitPoints);
+                    if (WhiteArmy.Champ != null)
+                        if (WhiteArmy.Champ.Alive) 
+                            if(RedArmy.Champ.Alive) 
+                                RedArmy.Champ.Damage(WhiteArmy.Champ.HitPoints);
+                    if (RedArmy!=null) RedArmy.CastAll(WhiteArmy); // ход красных
 
                     if(WhiteArmy.Champ!=null)
                         if (WhiteArmy.Champ.Alive)
@@ -740,7 +750,6 @@ class Program       // #Pattern #Bridge - dotnet console
                         if (RedArmy.Champ.Alive) 
                             if (WhiteArmy.Champ.Alive) 
                                 WhiteArmy.Champ.Damage(RedArmy.Champ.HitPoints);
-                    
                     if (WhiteArmy != null) WhiteArmy.CastAll(RedArmy); // ход белых
 
                     if (!RedArmy.Regroup())
